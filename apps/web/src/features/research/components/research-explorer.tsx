@@ -25,10 +25,14 @@ type Scored = {
 
 export function ResearchClient({
   apps,
+  ideas = [],
+  initialApp = null,
   initialSeed = "",
   initialCountry = "us",
 }: {
   apps: { id: number; name: string; icon: string | null; country: string }[];
+  ideas?: string[];
+  initialApp?: number | null;
   initialSeed?: string;
   initialCountry?: string;
 }) {
@@ -42,8 +46,8 @@ export function ResearchClient({
   const [seedTop, setSeedTop] = useState<{ top: SerpApp[]; difficulty: number | null } | null>(null);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [scored, setScored] = useState<Map<string, Scored>>(new Map());
-  // Pre-pick only when there is exactly one app; with several, the user chooses.
-  const [target, setTarget] = useState<number | "">(apps.length === 1 ? apps[0].id : "");
+  // Pre-picked from ?app= or when there is exactly one app; with several, the user chooses.
+  const [target, setTarget] = useState<number | "">(initialApp ?? "");
   const [tracked, setTracked] = useState<{ text: string; ok: boolean } | null>(null);
   const targetApp = apps.find((a) => a.id === target) ?? null;
   const { job, track } = useJob();
@@ -77,21 +81,29 @@ export function ResearchClient({
       ];
       setCands(list);
       setSeedTop({ top: j.top, difficulty: j.difficulty });
-      setSel(
-        new Set(
-          list
-            .filter((x) => x.origin === "autocomplete")
-            .slice(0, 10)
-            .map((x) => x.term),
-        ),
-      );
+      const preselected = list
+        .filter((x) => x.origin === "autocomplete")
+        .slice(0, 10)
+        .map((x) => x.term);
+      setSel(new Set(preselected));
       // show whatever is already scored (cached) right away
-      const pre = await fetch(`/api/analyze?${new URLSearchParams({ terms: list.map((x) => x.term).join(","), country: c })}`).then((x) =>
-        x.json(),
-      );
-      setScored(new Map((pre as Scored[]).filter((x) => x.difficulty != null || x.popularity != null).map((x) => [x.term, x])));
+      const pq = new URLSearchParams({ terms: list.map((x) => x.term).join(","), country: c });
+      if (target) pq.set("appId", String(target)); // so "Your rank" is right from the first render
+      const pre = await fetch(`/api/analyze?${pq}`).then((x) => x.json());
+      const known = (pre as Scored[]).filter((x) => x.difficulty != null || x.popularity != null);
+      setScored(new Map(known.map((x) => [x.term, x])));
+      // Measure the pre-selected ideas automatically, so nobody has to find a "score" button first.
+      const missing = preselected.filter((t) => !known.some((k) => k.term === t));
+      if (missing.length) {
+        const sr = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ terms: missing, country: c }),
+        }).then((x) => x.json());
+        if (sr.jobId) track(sr.jobId);
+      }
     },
-    [deep],
+    [deep, track, target],
   );
 
   const auto = useRef(false);
@@ -138,7 +150,7 @@ export function ResearchClient({
 
   const trackSel = async () => {
     if (!target) {
-      setTracked({ ok: false, text: "Pick which of your apps to track these for (the “Choose your app…” menu)." });
+      setTracked({ ok: false, text: "Choose your app in “Finding keywords for” at the top, then click Track again." });
       return;
     }
     const terms = [...sel].filter((t) => !scored.get(t)?.brand);
@@ -170,34 +182,84 @@ export function ResearchClient({
           e.preventDefault();
           run(seed, country);
         }}
-        className="card flex flex-wrap items-center gap-2 p-3"
+        className="card flex flex-col gap-3 p-4"
       >
-        <Search className="ml-1 h-4 w-4 text-ink-3" />
-        <input
-          value={seed}
-          onChange={(e) => setSeed(e.target.value)}
-          placeholder="Seed keyword, e.g. habit tracker"
-          className="h-10 min-w-48 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3"
-          required
-          minLength={2}
-        />
-        <select value={country} onChange={(e) => setCountry(e.target.value)} className="field h-10 px-2 text-sm" aria-label="Storefront">
-          {Object.entries(STOREFRONTS).map(([c, s]) => (
-            <option key={c} value={c}>
-              {s.flag} {c.toUpperCase()}
-            </option>
-          ))}
-        </select>
-        <label
-          className="flex items-center gap-2 px-2 text-sm text-ink-2"
-          title="Also expands “seed a…z” — 26 more autocomplete calls (~35s)"
-        >
-          <input type="checkbox" checked={deep} onChange={(e) => setDeep(e.target.checked)} className="accent-[var(--color-primary)]" />{" "}
-          Deep
-        </label>
-        <button disabled={busy} className="btn-primary flex h-10 items-center gap-2 px-4 text-sm">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}Discover
-        </button>
+        {apps.length > 0 && (
+          <label className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-ink-2">Finding keywords for</span>
+            <select
+              value={target}
+              onChange={(e) => {
+                const id = e.target.value ? Number(e.target.value) : "";
+                setTarget(id);
+                const a = apps.find((x) => x.id === id);
+                if (a && !cands.length) setCountry(a.country); // match the app's store until a search has run
+              }}
+              className="field h-9 max-w-72 px-2 text-sm font-medium"
+              aria-label="Your app"
+            >
+              <option value="">No app, just exploring</option>
+              {apps.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="field flex h-11 min-w-56 flex-1 items-center gap-2 px-3">
+            <Search className="h-4 w-4 text-ink-3" />
+            <input
+              value={seed}
+              onChange={(e) => setSeed(e.target.value)}
+              placeholder="Describe your app in 1–3 words, e.g. habit tracker"
+              className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3"
+              required
+              minLength={2}
+            />
+          </div>
+          <select
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            className="field h-11 px-2 text-sm"
+            aria-label="App Store country"
+            title="Which country's App Store to search"
+          >
+            {Object.entries(STOREFRONTS).map(([c, s]) => (
+              <option key={c} value={c}>
+                {s.flag} {s.name}
+              </option>
+            ))}
+          </select>
+          <button disabled={busy} className="btn-primary flex h-11 items-center gap-2 px-5 text-[15px]">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}Find keywords
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-ink-3">
+          {!cands.length && !busy && ideas.length > 0 && (
+            <span className="flex flex-wrap items-center gap-2">
+              Try:
+              {ideas.map((t) => (
+                <button
+                  type="button"
+                  key={t}
+                  onClick={() => {
+                    setSeed(t);
+                    run(t, country);
+                  }}
+                  className="rounded-full border border-line-strong px-2.5 py-1 text-ink-2 hover:text-ink"
+                >
+                  {t}
+                </button>
+              ))}
+            </span>
+          )}
+          <label className="ml-auto flex items-center gap-2" title="Also tries “your words + a…z”: about 26 more lookups, ~35 s">
+            <input type="checkbox" checked={deep} onChange={(e) => setDeep(e.target.checked)} className="accent-[var(--color-primary)]" />
+            More ideas (slower)
+          </label>
+        </div>
       </form>
       {err && <p className="text-sm text-bad">{err}</p>}
 
@@ -236,7 +298,7 @@ export function ResearchClient({
         <section className="card">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/70 px-4 py-3">
             <div className="text-[15px] font-semibold">
-              <L term="candidates">{cands.length} candidates</L>{" "}
+              <L term="candidates">{cands.length} keyword ideas</L>{" "}
               <span className="text-sm font-normal text-ink-3">· {sel.size} selected</span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -245,31 +307,16 @@ export function ResearchClient({
                 onClick={score}
                 disabled={!sel.size || (!!job && !job.finished)}
                 className="btn-ghost h-9 px-3 text-sm"
-                title="Measure popularity + difficulty for each selected keyword (~10s each)"
+                title="Measure popularity and difficulty for the ticked keywords (~10 s each). The first 10 are measured automatically."
               >
-                Score selected
+                Measure selected
               </button>
               {apps.length ? (
-                <>
-                  <select
-                    value={target}
-                    onChange={(e) => setTarget(e.target.value ? Number(e.target.value) : "")}
-                    className="field h-9 max-w-52 px-2 text-sm"
-                    aria-label="Track for app"
-                  >
-                    <option value="">Choose your app…</option>
-                    {apps.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button onClick={trackSel} disabled={!sel.size} className="btn-primary h-9 px-3 text-sm">
-                    Track selected
-                  </button>
-                </>
+                <button onClick={trackSel} disabled={!sel.size} className="btn-primary h-9 px-3 text-sm">
+                  {targetApp ? `Track ${sel.size} for ${targetApp.name.slice(0, 24)}` : `Track ${sel.size} selected`}
+                </button>
               ) : (
-                <Link href="/apps" className="btn-primary flex h-9 items-center px-3 text-sm">
+                <Link href="/apps#add" className="btn-primary flex h-9 items-center px-3 text-sm">
                   Add your app to track these
                 </Link>
               )}

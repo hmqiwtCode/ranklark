@@ -16,8 +16,8 @@ export function AppHeader({
 }) {
   const q = `?country=${country}`;
   const tabs = [
-    ["keywords", "Keywords", `/apps/${app.id}${q}`],
-    ["metadata", "Metadata", `/apps/${app.id}/metadata${q}`],
+    ["keywords", "Rankings", `/apps/${app.id}${q}`],
+    ["metadata", "App Store text", `/apps/${app.id}/metadata${q}`],
     ["competitors", "Competitors", `/apps/${app.id}/competitors${q}`],
   ] as const;
   return (

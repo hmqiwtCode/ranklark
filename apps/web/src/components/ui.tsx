@@ -87,31 +87,31 @@ export function SourceBadge({ source, title }: { source: string | null | undefin
   );
 }
 
-const PLACE: Record<string, { cls: string; tip: string }> = {
-  T: { cls: "bg-primary/15 text-primary", tip: "in the app name (title)" },
-  S: { cls: "bg-sky/15 text-sky", tip: "in the subtitle" },
-  K: { cls: "bg-good/15 text-good", tip: "in the keyword field" },
-  D: { cls: "bg-white/10 text-ink-2", tip: "in the developer name" },
+const PLACE: Record<string, { label: string; cls: string; tip: string }> = {
+  T: { label: "Name", cls: "bg-primary/15 text-primary", tip: "in the app name (title)" },
+  S: { label: "Subtitle", cls: "bg-sky/15 text-sky", tip: "in the subtitle" },
+  K: { label: "Keywords", cls: "bg-good/15 text-good", tip: "in the hidden keyword field" },
+  D: { label: "Developer", cls: "bg-white/10 text-ink-2", tip: "in the developer name" },
 };
 
 export function Placement({ where, missing, exact }: { where: string[]; missing: string[]; exact: boolean }) {
   if (!where.length)
     return (
-      <span className="text-xs text-ink-3" title="No word of this keyword is in your indexed metadata">
-        not in metadata
+      <span className="text-xs text-warn" title="None of these words are in your app name, subtitle or keyword field">
+        not in your text
       </span>
     );
   return (
     <span
-      className="inline-flex items-center gap-1"
+      className="inline-flex flex-wrap items-center gap-1"
       title={missing.length ? `missing: ${missing.join(", ")}` : exact ? "exact phrase in title" : "all words covered"}
     >
       {where.map((w) => (
-        <span key={w} title={PLACE[w]?.tip} className={`grid h-5 w-5 place-items-center rounded-md text-[10px] font-bold ${PLACE[w]?.cls}`}>
-          {w}
+        <span key={w} title={PLACE[w]?.tip} className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${PLACE[w]?.cls}`}>
+          {PLACE[w]?.label ?? w}
         </span>
       ))}
-      {missing.length > 0 && <span className="text-[11px] text-warn">+{missing.length} missing</span>}
+      {missing.length > 0 && <span className="whitespace-nowrap text-[11px] text-warn">missing “{missing.join(", ")}”</span>}
     </span>
   );
 }

@@ -16,7 +16,7 @@ fs.mkdirSync(OUT, { recursive: true });
 
 const shots = [
   { file: "landing.png", url: `${BASE}/`, wait: 2500 },
-  { file: "research.png", url: `${BASE}/research?seed=${encodeURIComponent(SEED)}&country=${COUNTRY}`, wait: 6000 },
+  { file: "research.png", url: `${BASE}/research?seed=${encodeURIComponent(SEED)}&country=${COUNTRY}${APP_ID ? `&app=${APP_ID}` : ""}`, wait: 6000 },
   ...(APP_ID
     ? [
         { file: "app-dashboard.png", url: `${APP_BASE}/apps/${APP_ID}?country=${COUNTRY}`, wait: 2500 },

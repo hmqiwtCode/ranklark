@@ -17,8 +17,8 @@ const FILTERS: [Filter, string][] = [
   ["all", "All"],
   ["top10", "Top 10"],
   ["top50", "Top 50"],
-  ["unranked", "Unranked"],
-  ["gap", "Not in metadata"],
+  ["unranked", "Not found"],
+  ["gap", "Missing from your text"],
 ];
 
 export function KeywordTable({ rows, appId, country, myIds }: { rows: KeywordRow[]; appId: number; country: string; myIds: number[] }) {
@@ -27,6 +27,8 @@ export function KeywordTable({ rows, appId, country, myIds }: { rows: KeywordRow
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "rank", dir: 1 });
   const mine = useMemo(() => new Set(myIds), [myIds]);
+  // The trend sparkline is only useful once there are at least two days of history.
+  const showTrend = useMemo(() => rows.some((r) => r.history.filter((h) => h.rank != null).length >= 2), [rows]);
 
   const counts = useMemo(
     () => ({
@@ -113,15 +115,14 @@ export function KeywordTable({ rows, appId, country, myIds }: { rows: KeywordRow
           <thead className="text-[12px] text-ink-3">
             <tr className="border-b border-line/70">
               {th("term", "Keyword", "keyword", "pl-4")}
+              {th("rank", "Your rank", "rank")}
+              {th("delta", "7-day change", "delta")}
+              {showTrend && plain("Trend", "trend")}
               {th("popularity", "Popularity", "popularity")}
               {th("difficulty", "Difficulty", "difficulty")}
-              {th("rank", "Rank", "rank")}
-              {th("delta", "Δ 7d", "delta")}
-              {plain("Trend", "trend")}
-              {plain("Top apps", "topApps")}
-              {plain("In metadata", "placement")}
-              {th("opportunity", "Opp.", "opportunity")}
-              {plain("Checked", "checked")}
+              {th("opportunity", "Opportunity", "opportunity")}
+              {plain("In your text", "placement")}
+              {plain("Top 5 apps", "topApps")}
               <th className="w-8" />
             </tr>
           </thead>
@@ -138,8 +139,34 @@ export function KeywordTable({ rows, appId, country, myIds }: { rows: KeywordRow
                       Brand
                     </span>
                   )}
-                  {r.source !== "manual" && <span className="ml-2 text-[10px] uppercase tracking-wide text-ink-3">{r.source}</span>}
                 </td>
+                <td className="px-3 py-2 tabular">
+                  {r.rank == null ? (
+                    <span
+                      className="whitespace-nowrap text-xs text-ink-3"
+                      title={`Not in the top 200 results · checked ${ago(r.checkedAt)}`}
+                    >
+                      not found
+                    </span>
+                  ) : (
+                    <span
+                      className={`inline-flex items-center gap-1 font-semibold ${r.rank <= 10 ? "text-ink" : "text-ink-2"}`}
+                      title={`App Store web: ${r.rankWeb ? `#${r.rankWeb}` : "not in top ~12"} · iTunes API: ${r.rankApi ? `#${r.rankApi}` : "not in top 200"}${r.approx ? " — approximate (beyond the top 12)" : ""} · checked ${ago(r.checkedAt)}`}
+                    >
+                      {r.approx ? "≈" : "#"}
+                      {r.rank}
+                      {r.rank <= 3 && <Star className="h-3 w-3 fill-warn text-warn" />}
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  <Delta value={r.delta} />
+                </td>
+                {showTrend && (
+                  <td className="px-3 py-2">
+                    <RankSpark history={r.history} />
+                  </td>
+                )}
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-1.5">
                     <Meter value={r.popularity} color="var(--color-series-blue)" title={r.popReason ?? undefined} />
@@ -153,27 +180,9 @@ export function KeywordTable({ rows, appId, country, myIds }: { rows: KeywordRow
                     title="Estimate from top-10 apps' rating counts, title match and ratings"
                   />
                 </td>
-                <td className="px-3 py-2 tabular">
-                  {r.rank == null ? (
-                    <span className="text-ink-3" title="Not in the top 200 results">
-                      —
-                    </span>
-                  ) : (
-                    <span
-                      className={`inline-flex items-center gap-1 font-semibold ${r.rank <= 10 ? "text-ink" : "text-ink-2"}`}
-                      title={`App Store web: ${r.rankWeb ? `#${r.rankWeb}` : "not in top ~12"} · iTunes API: ${r.rankApi ? `#${r.rankApi}` : "not in top 200"}${r.approx ? " — approximate (API order beyond the web window)" : ""}`}
-                    >
-                      {r.approx ? "≈" : "#"}
-                      {r.rank}
-                      {r.rank <= 3 && <Star className="h-3 w-3 fill-warn text-warn" />}
-                    </span>
-                  )}
-                </td>
+                <td className="px-3 py-2 tabular text-ink-2">{r.opportunity ?? "—"}</td>
                 <td className="px-3 py-2">
-                  <Delta value={r.delta} />
-                </td>
-                <td className="px-3 py-2">
-                  <RankSpark history={r.history} />
+                  <Placement where={r.placement.where} missing={r.placement.missing} exact={r.placement.exactInTitle} />
                 </td>
                 <td className="px-3 py-2">
                   <div className="flex -space-x-1">
@@ -189,11 +198,6 @@ export function KeywordTable({ rows, appId, country, myIds }: { rows: KeywordRow
                     ))}
                   </div>
                 </td>
-                <td className="px-3 py-2">
-                  <Placement where={r.placement.where} missing={r.placement.missing} exact={r.placement.exactInTitle} />
-                </td>
-                <td className="px-3 py-2 tabular text-ink-2">{r.opportunity ?? "—"}</td>
-                <td className="px-3 py-2 text-ink-3">{ago(r.checkedAt)}</td>
                 <td className="pr-3">
                   <button onClick={() => remove(r.term)} className="opacity-0 transition group-hover:opacity-100" title="Stop tracking">
                     <Trash2 className="h-3.5 w-3.5 text-ink-3 hover:text-bad" />
@@ -203,8 +207,8 @@ export function KeywordTable({ rows, appId, country, myIds }: { rows: KeywordRow
             ))}
             {!shown.length && (
               <tr>
-                <td colSpan={11} className="px-4 py-10 text-center text-sm text-ink-3">
-                  {rows.length ? "No keywords match this filter." : "No keywords yet — add a few above, or discover some in Research."}
+                <td colSpan={10} className="px-4 py-10 text-center text-sm text-ink-3">
+                  {rows.length ? "No keywords match this filter." : "No keywords yet. Add a few above."}
                 </td>
               </tr>
             )}
@@ -213,15 +217,10 @@ export function KeywordTable({ rows, appId, country, myIds }: { rows: KeywordRow
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-[11px] text-ink-3">
         <span>
-          # = App Store web search order (top ~12) · ≈ = iTunes Search API position beyond that (top 200). Popularity &amp; difficulty: see
-          source badge ·{" "}
+          #5 = exact App Store position · ≈13 = approximate (beyond the top 12) · ★ = top 3 · hover any number for details ·{" "}
           <a className="underline hover:text-ink-2" href="/methodology">
-            methodology
+            how it's calculated
           </a>
-        </span>
-        <span>
-          <span className="text-primary">■</span> T title · <span className="text-sky">■</span> S subtitle ·{" "}
-          <span className="text-good">■</span> K keyword field
         </span>
       </div>
     </div>

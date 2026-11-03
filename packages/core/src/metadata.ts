@@ -212,7 +212,7 @@ export function audit(
     issues.push({
       level: "warn",
       field: "all",
-      message: `${uncovered.length} tracked keyword${uncovered.length > 1 ? "s are" : " is"} not fully covered by indexed metadata: ${uncovered.slice(0, 8).join(", ")}${uncovered.length > 8 ? "…" : ""}.`,
+      message: `${uncovered.length} tracked keyword${uncovered.length > 1 ? "s are" : " is"} missing words from your name, subtitle and keyword field: ${uncovered.slice(0, 8).join(", ")}${uncovered.length > 8 ? "…" : ""}.`,
       basis: "apple",
     });
   }
@@ -222,7 +222,7 @@ export function audit(
 
 /** Candidate terms from competitor titles/subtitles (higher signal than descriptions). */
 export function phrasesFrom(text: string | null | undefined, maxN = 3): string[] {
-  const parts = (text ?? "").split(/[-–—:|•,(){}[\]]/);
+  const parts = (text ?? "").split(/[-–—:|•,&+/(){}[\]]/);
   const out = new Set<string>();
   for (const part of parts) {
     const ws = tokens(part);

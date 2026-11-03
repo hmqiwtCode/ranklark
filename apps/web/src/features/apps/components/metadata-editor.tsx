@@ -80,8 +80,13 @@ export function MetadataEditor({
   return (
     <div className="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
       <section className="card p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold">Indexed fields</h2>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-[15px] font-semibold">Your App Store text</h2>
+            <p className="mt-0.5 text-[12px] text-ink-3">
+              Apple only searches these three fields. Try wording here and watch the coverage on the right update.
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             {ascEnabled && (
               <button onClick={syncAsc} disabled={!!busy} className="btn-ghost flex h-8 items-center gap-1.5 px-3 text-xs">
@@ -103,9 +108,7 @@ export function MetadataEditor({
           onChange={(e) => setDraft({ ...draft, name: e.target.value })}
           className="field mb-1 h-10 w-full px-3 text-sm"
         />
-        <p className="mb-4 text-[11px] text-ink-3">
-          Live name from the App Store. Edits here are a scratchpad for testing coverage, not saved.
-        </p>
+        <p className="mb-4 text-[11px] text-ink-3">From the App Store. Changing it here is only for trying ideas; it isn't saved.</p>
 
         <label className="mb-1 flex items-center justify-between text-[13px] text-ink-2">
           <L term="subtitle">Subtitle</L> <Counter used={[...draft.subtitle].length} limit={30} />
@@ -188,7 +191,9 @@ export function MetadataEditor({
                 <span className={p.covered ? "text-ink" : "text-ink-3"}>{t}</span>
                 <span className="text-[11px]">
                   {p.covered ? (
-                    <span className="text-good">{p.where.join("+")}</span>
+                    <span className="text-good">
+                      {p.where.map((w) => ({ T: "Name", S: "Subtitle", K: "Keywords", D: "Developer" })[w] ?? w).join(" + ")}
+                    </span>
                   ) : (
                     <span className="text-warn">missing: {p.missing.join(", ")}</span>
                   )}

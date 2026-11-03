@@ -81,7 +81,12 @@ export function AddAppForm({ big = false }: { big?: boolean }) {
         </span>
         <input
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+            // A pasted link already says which store it's from (apps.apple.com/vn/…): use that country.
+            const cc = e.target.value.match(/apps\.apple\.com\/([a-z]{2})\//i)?.[1]?.toLowerCase();
+            if (cc && STOREFRONTS[cc]) setCountry(cc);
+          }}
           placeholder="Paste your App Store link or app ID"
           className={`field min-w-0 flex-1 rounded-none px-3 ${big ? "h-12 text-[16px]" : "h-10 text-sm"}`}
           required
@@ -140,31 +145,37 @@ export function CountrySelect({ value, options }: { value: string; options: stri
   const sp = useSearchParams();
   const all = [...new Set([value, ...options, "us", "gb", "vn"])];
   return (
-    <select
-      value={value}
-      aria-label="Storefront"
-      className="btn-ghost h-9 cursor-pointer px-2 text-sm font-medium"
-      onChange={(e) => {
-        const p = new URLSearchParams(sp.toString());
-        p.set("country", e.target.value);
-        router.push(`${pathname}?${p}`);
-      }}
+    <label
+      className="btn-ghost flex h-9 cursor-pointer items-center gap-1.5 pl-2.5 text-sm"
+      title="Which country's App Store rankings you're looking at"
     >
-      {all
-        .filter((c) => STOREFRONTS[c])
-        .map((c) => (
-          <option key={c} value={c}>
-            {STOREFRONTS[c].flag} {STOREFRONTS[c].name}
-          </option>
-        ))}
-      {Object.keys(STOREFRONTS)
-        .filter((c) => !all.includes(c))
-        .map((c) => (
-          <option key={c} value={c}>
-            {STOREFRONTS[c].flag} {STOREFRONTS[c].name}
-          </option>
-        ))}
-    </select>
+      <span className="text-ink-3">Store</span>
+      <select
+        value={value}
+        aria-label="App Store country"
+        className="h-full cursor-pointer bg-transparent pr-1 font-medium outline-none"
+        onChange={(e) => {
+          const p = new URLSearchParams(sp.toString());
+          p.set("country", e.target.value);
+          router.push(`${pathname}?${p}`);
+        }}
+      >
+        {all
+          .filter((c) => STOREFRONTS[c])
+          .map((c) => (
+            <option key={c} value={c}>
+              {STOREFRONTS[c].flag} {STOREFRONTS[c].name}
+            </option>
+          ))}
+        {Object.keys(STOREFRONTS)
+          .filter((c) => !all.includes(c))
+          .map((c) => (
+            <option key={c} value={c}>
+              {STOREFRONTS[c].flag} {STOREFRONTS[c].name}
+            </option>
+          ))}
+      </select>
+    </label>
   );
 }
 
@@ -199,20 +210,13 @@ export function RefreshButton({ appId, country, auto = false }: { appId: number;
       {note && <span className="max-w-64 text-xs text-ink-3">{note}</span>}
       <JobBar job={job} />
       <button
-        title="Re-check ranks now (≈3s per keyword — Apple allows ~20 searches/min)"
-        disabled={!!job && !job.finished}
-        onClick={() => run(false)}
-        className="btn-ghost grid h-9 w-9 place-items-center"
-      >
-        <RefreshCw className={`h-4 w-4 ${job && !job.finished ? "animate-spin" : ""}`} />
-      </button>
-      <button
-        title="Re-check ranks + popularity"
+        title="Search the App Store again for every keyword: ranks, popularity and difficulty (a few seconds per keyword)"
         disabled={!!job && !job.finished}
         onClick={() => run(true)}
-        className="btn-ghost h-9 px-3 text-sm"
+        className="btn-ghost flex h-9 items-center gap-2 px-3 text-sm"
       >
-        Full refresh
+        <RefreshCw className={`h-4 w-4 ${job && !job.finished ? "animate-spin" : ""}`} />
+        Check now
       </button>
     </div>
   );
@@ -242,13 +246,16 @@ export function AddKeywords({ appId, country }: { appId: number; country: string
   return (
     <form onSubmit={submit} className="flex flex-1 flex-wrap items-center gap-3">
       <div className="flex min-w-60 flex-1 items-center gap-2">
-        <Plus className="h-4 w-4 text-ink-3" />
         <input
           value={v}
           onChange={(e) => setV(e.target.value)}
-          placeholder="Add keyword(s), comma separated…"
-          className="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink-3"
+          placeholder="Track more keywords, e.g. habit app, daily routine"
+          aria-label="Keywords to track, comma separated"
+          className="field h-10 min-w-0 flex-1 px-3 text-sm"
         />
+        <button disabled={!v.trim()} className="btn-primary flex h-10 items-center gap-1.5 px-4 text-sm">
+          <Plus className="h-4 w-4" /> Add
+        </button>
       </div>
       <JobBar job={job} />
       {err && <span className="text-xs text-bad">{err}</span>}

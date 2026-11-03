@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { audit, keywordFieldTokens, LIMITS, normalize, placement, tokens, utf8Bytes } from "../src/metadata";
+import { audit, keywordFieldTokens, LIMITS, normalize, phrasesFrom, placement, tokens, utf8Bytes } from "../src/metadata";
 
 describe("tokenizer", () => {
   it("normalizes punctuation, case and apostrophes", () => {
@@ -31,6 +31,15 @@ describe("placement", () => {
     expect(placement("habits", fields).where).toEqual(["T"]);
     expect(placement("routines", fields).where).toEqual(["K"]);
     expect(placement("water reminder", fields).missing).toEqual(["water", "reminder"]);
+  });
+});
+
+describe("phrasesFrom", () => {
+  it("never joins words across separators like & or :", () => {
+    const p = phrasesFrom("Glubbo - Drink Water Reminder: Hydration tracker & fish tank");
+    expect(p).toContain("hydration tracker");
+    expect(p).toContain("fish tank");
+    expect(p).not.toContain("tracker fish");
   });
 });
 

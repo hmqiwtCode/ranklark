@@ -46,7 +46,7 @@ export default function AppsPage() {
         </div>
       </div>
 
-      <section className="card mb-5 flex flex-col gap-4 p-4 md:flex-row md:items-center">
+      <section id="add" className="card mb-5 flex scroll-mt-6 flex-col gap-4 p-4 md:flex-row md:items-center">
         <div className="flex-1">
           <AddAppForm />
         </div>

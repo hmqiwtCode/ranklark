@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Caveat, DM_Sans } from "next/font/google";
+import { Footer } from "@/components/footer";
 import { Nav } from "@/components/nav";
 import { ExtensionAutoConnect } from "@/features/extension/components/auto-connect";
 import "./globals.css";
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Nav />
         <ExtensionAutoConnect />
         {children}
+        <Footer />
       </body>
     </html>
   );
