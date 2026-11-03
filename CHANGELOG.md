@@ -6,6 +6,16 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **AI research (bring your own Claude)** at `/agent`, set up in the new **Settings** page.
+  - Connect with your own Claude API key or through Claude Code over MCP. The key is kept in your browser and
+    sent only per run, never stored on the server. The MCP endpoint is `/api/mcp`, protected by a token that is
+    stored hashed.
+  - A planner → workers → analyst → checker loop runs until the evidence is good enough. A composer and
+    validator then recommend keywords plus an App Name, Subtitle and Keyword field.
+  - Every claim cites a fact from real App Store data, and the model never produces a number.
+  - Each run has a hard Apple request budget enforced in the request queue.
+  - Live graph (React Flow), findings, evidence and timeline. Runs are saved in SQLite (migration 2).
+  - See [docs/ai-research.md](docs/ai-research.md).
 - Extension popup: **Track this app** on any App Store app page (apps.apple.com/…/id…), with optional
   keywords, in one click. No new Chrome permission is needed.
 
@@ -23,6 +33,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
 - Add-app picks the country from the pasted link (apps.apple.com/vn/… → Vietnam).
 
 ### Fixed
+- The metadata audit now labels singular + plural duplicates as Apple's rule: Apple's search guidance says plurals of
+  words you already use count as duplicates. The label was "observed" before.
 - Keyword suggestions no longer join words across "&", "/" or "+".
 - The popup no longer says "All checked for today" when no keywords are tracked. "Run now" now reports what it did.
 

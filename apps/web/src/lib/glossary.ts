@@ -160,4 +160,90 @@ export const GLOSSARY: Record<string, Term> = {
     title: "Sweet spot",
     body: "Top-left corner: many searches but few strong competitors. Those keywords are the easiest wins.",
   },
+
+  // ---------------------------------------------------------------- AI research agent
+  agentIteration: {
+    title: "Iteration",
+    body: "One round of research: the planner picks what to look up, the workers fetch it from Apple, the analyst writes findings and the checker verifies them. The run repeats until the checker says the evidence is good enough or the limit is reached.",
+  },
+  agentAppleBudget: {
+    title: "Apple requests",
+    body: "How many requests this run has sent to Apple, out of the most it may send. Answers we already had saved are free. Requests stay spaced out at the usual safe pace however many the run is allowed.",
+    source: "Counted in Ranklark's Apple request queue",
+  },
+  agentKeywordBudget: {
+    title: "Keywords scored",
+    body: "How many different keywords the run has measured (popularity, difficulty, opportunity), out of the most it may measure.",
+  },
+  agentFacts: {
+    title: "Facts",
+    body: "Evidence the workers collected: Apple data or our published formulas, each with an ID like F12. Their one-line summaries are written by code, not by the AI. Every number in the result comes from a fact.",
+    source: "Apple data + Ranklark formulas",
+  },
+  agentFindings: {
+    title: "Findings",
+    body: "What the analyst concluded from the facts, such as “this keyword is popular but crowded”. Each finding cites the facts (F12…) it is based on, and the checker gives it a verdict.",
+  },
+  agentVerdict: {
+    title: "Verdict",
+    body: "Whether a finding holds up. Supported = the cited facts back it. Unsupported = they don't, or it cites a number that isn't in them. Needs data = there isn't enough evidence yet. “Rules” = our automatic citation check; “checker” = the checker AI.",
+  },
+  agentConfidence: {
+    title: "Confidence",
+    body: "How sure the analyst said it was: high, medium or low. It is the AI's own rating, not a measurement.",
+  },
+  agentTokens: {
+    title: "Tokens",
+    body: "How much text Claude read (in) and wrote (out) for this run. Claude API usage is billed by tokens.",
+    source: "Usage reported by the Claude API",
+  },
+  agentCost: {
+    title: "Est. cost",
+    body: "An estimate of what this run cost on your Claude API account: tokens × Anthropic's list price for the model. Your real bill can differ (discounts, price changes). — = we don't have a price for this model. Runs through Claude Code use your Claude plan instead.",
+    source: "Anthropic list prices",
+  },
+  agentElapsed: { title: "Elapsed", body: "How long the run has been going, or how long it took." },
+  agentKwRole: {
+    title: "Role",
+    body: "Primary = the keyword the listing is built around. Secondary = supporting keywords. Long tail = longer, more specific phrases with fewer searches and less competition.",
+  },
+  agentKwPlacement: {
+    title: "Placement",
+    body: "Where the keyword goes: the app name (strongest), the subtitle, or the hidden keyword field.",
+  },
+  agentWhy: {
+    title: "Why",
+    body: "The AI's short reason for picking this keyword. The numbers next to it come from the cited facts, not from the AI.",
+  },
+  agentCites: { title: "Facts cited", body: "The evidence (F12…) this item is based on. Click one to see it in the Evidence tab." },
+  agentValidation: {
+    title: "Validation",
+    body: "Our automatic check of the recommendation: Apple's length limits, repeated words, spaces after commas, other apps' names (not allowed by Apple), and keywords we never measured. Errors must be fixed; warnings are worth a look.",
+    source: "Apple's limits + Ranklark audit rules",
+  },
+  agentFactSource: {
+    title: "Source",
+    body: "Where the fact's data came from: the App Store listing, autocomplete, the iTunes Search API, the App Store website, Apple Ads, our estimate, our formulas or Apple's metadata rules.",
+  },
+  rolePlanner: {
+    title: "Planner",
+    body: "Claude decides what to look up next: which keywords to expand, score or compare, within the remaining budget.",
+  },
+  roleWorker: {
+    title: "Worker",
+    body: "Ranklark code that fetches data from Apple (or our saved copy) and turns it into facts. No AI involved.",
+  },
+  roleAnalyst: { title: "Analyst", body: "Claude reads the facts and writes findings, each citing the facts behind it." },
+  roleChecker: {
+    title: "Checker",
+    body: "First our rules reject findings that cite missing facts or numbers that aren't in them. Then Claude checks the rest and decides whether the evidence is good enough to stop.",
+  },
+  roleComposer: {
+    title: "Composer",
+    body: "Claude writes the recommended name, subtitle and keyword field from the supported findings and measured keywords.",
+  },
+  roleValidator: {
+    title: "Validator",
+    body: "Ranklark code checks the recommendation against Apple's limits and our rules. If there are errors, the composer gets one chance to fix them.",
+  },
 };

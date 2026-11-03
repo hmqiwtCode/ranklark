@@ -40,4 +40,9 @@ pnpm start         # next start -p 3100
 4. Pin which extension IDs may connect: `EXT_ALLOWED_IDS=<your store extension id>`. Otherwise any
    extension could request a key from `/api/ext/connect`.
 
+5. AI research: every person saves their own Claude API key in Settings. In extension mode `ANTHROPIC_API_KEY`
+   is ignored, so one person's key can't pay for everyone's runs. Leave the MCP endpoint off (the default)
+   unless the people who can reach the dashboard are trusted to use it. Everyone with the token shares it.
+   In this mode the agent can only use App Store data that's already cached. See [AI research](ai-research.md).
+
 All environment variables are documented in `apps/web/.env.example`.

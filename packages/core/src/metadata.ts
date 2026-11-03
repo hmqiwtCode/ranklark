@@ -193,8 +193,9 @@ export function audit(
       issues.push({
         level: "info",
         field: "keywords",
-        message: `Singular + plural both present (${plurals.map((p) => p.join("/")).join(", ")}). Apple often matches both forms — one may be redundant.`,
-        basis: "observed",
+        // developer.apple.com/app-store/search/: plurals of words you've already included "are considered duplicates"
+        message: `Singular + plural both present (${plurals.map((p) => p.join("/")).join(", ")}). Apple counts a plural of a word you already use as a duplicate, so one is wasted.`,
+        basis: "apple",
       });
 
     const filler = kwTokens.filter((t) => ["app", "apps", "free", "iphone", "ipad", "best"].includes(t));

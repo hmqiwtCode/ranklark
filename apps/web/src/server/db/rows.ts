@@ -24,3 +24,27 @@ export type AppRow = {
   added_at: string;
   updated_at: string;
 };
+
+export type AgentRunRow = {
+  id: string;
+  title: string;
+  app_id: number | null;
+  country: string;
+  status: "running" | "done" | "failed" | "cancelled" | "interrupted";
+  source: "api" | "mcp";
+  model: string | null;
+  input_json: string;
+  config_json: string;
+  result_json: string | null;
+  error: string | null;
+  created_at: string;
+  finished_at: string | null;
+};
+
+export type AgentEventRow = {
+  run_id: string;
+  seq: number;
+  at: string;
+  type: string;
+  json: string;
+};
