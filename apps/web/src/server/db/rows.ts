@@ -39,6 +39,8 @@ export type AgentRunRow = {
   error: string | null;
   created_at: string;
   finished_at: string | null;
+  /** Process driving an API run (migration 3). NULL for MCP runs and runs created before it. */
+  owner_pid: number | null;
 };
 
 export type AgentEventRow = {

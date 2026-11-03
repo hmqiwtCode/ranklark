@@ -191,4 +191,12 @@ export const MIGRATIONS: { name: string; sql: string }[] = [
     CREATE INDEX IF NOT EXISTS idx_agent_runs_created ON agent_runs(created_at);
 `,
   },
+  {
+    name: "agent run owner process",
+    sql: `
+    -- process that drives an API run, so a run is only called interrupted once that process is gone
+    -- (NULL for MCP runs, which Claude Code drives from outside)
+    ALTER TABLE agent_runs ADD COLUMN owner_pid INTEGER;
+`,
+  },
 ];

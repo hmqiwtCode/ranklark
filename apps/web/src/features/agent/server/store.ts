@@ -20,19 +20,36 @@ import {
   sanitizeConfig,
 } from "../lib/contract";
 import { publish } from "./bus";
+import { processAlive, staleReason } from "./stale";
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __agentStoreBooted: boolean | undefined;
-}
-
-// At boot, runs still marked running belong to a process that is gone. Once per process (not per hot reload,
-// which would orphan this process's live runs), and never while `next build` collects page data.
-if (!globalThis.__agentStoreBooted && process.env.NEXT_PHASE !== "phase-production-build") {
-  globalThis.__agentStoreBooted = true;
-  db.prepare(
-    "UPDATE agent_runs SET status = 'interrupted', finished_at = datetime('now'), error = COALESCE(error, 'The server restarted while this run was in progress.') WHERE status = 'running'",
-  ).run();
+/**
+ * Closes runs still marked running that nothing drives any more: an API run whose process is gone, or an MCP run
+ * Claude Code abandoned. Runs lazily on every read, never at module load: dev/build helper processes load this
+ * module too, and a load-time sweep there interrupted live runs.
+ */
+function reconcileRuns() {
+  const rows = db
+    .prepare(
+      `SELECT r.id, r.source, r.owner_pid, COALESCE((SELECT MAX(e.at) FROM agent_events e WHERE e.run_id = r.id), r.created_at) AS last_at
+       FROM agent_runs r WHERE r.status = 'running'`,
+    )
+    .all() as { id: string; source: "api" | "mcp"; owner_pid: number | null; last_at: string }[];
+  if (!rows.length) return;
+  const ctx = {
+    pid: process.pid,
+    now: Date.now(),
+    drivenHere: (id: string) => globalThis.__agentRunControllers?.has(id) ?? false,
+    alive: processAlive,
+  };
+  const close = db.prepare(
+    "UPDATE agent_runs SET status = 'interrupted', finished_at = datetime('now'), error = COALESCE(error, ?) WHERE id = ? AND status = 'running'",
+  );
+  for (const r of rows) {
+    // event times are ISO with Z; created_at is SQLite UTC without a zone
+    const last = Date.parse(r.last_at.includes("T") ? r.last_at : `${r.last_at.replace(" ", "T")}Z`);
+    const reason = staleReason(r.id, { source: r.source, ownerPid: r.owner_pid, lastActivityMs: last }, ctx);
+    if (reason) close.run(reason, r.id);
+  }
 }
 
 // ------------------------------------------------------------------ runs
@@ -48,13 +65,27 @@ export function createRun(r: {
 }): string {
   const id = crypto.randomUUID();
   db.prepare(
-    `INSERT INTO agent_runs (id, title, app_id, country, status, source, model, input_json, config_json)
-     VALUES (?, ?, ?, ?, 'running', ?, ?, ?, ?)`,
-  ).run(id, r.title.slice(0, 120), r.appId, r.country, r.source, r.model, JSON.stringify(r.input), JSON.stringify(r.config));
+    `INSERT INTO agent_runs (id, title, app_id, country, status, source, model, input_json, config_json, owner_pid)
+     VALUES (?, ?, ?, ?, 'running', ?, ?, ?, ?, ?)`,
+  ).run(
+    id,
+    r.title.slice(0, 120),
+    r.appId,
+    r.country,
+    r.source,
+    r.model,
+    JSON.stringify(r.input),
+    JSON.stringify(r.config),
+    // an API run lives in this process's loop; an MCP run is driven by Claude Code from outside
+    r.source === "api" ? process.pid : null,
+  );
   return id;
 }
 
-export const getRunRow = (id: string) => db.prepare("SELECT * FROM agent_runs WHERE id = ?").get(id) as AgentRunRow | undefined;
+export function getRunRow(id: string): AgentRunRow | undefined {
+  reconcileRuns();
+  return db.prepare("SELECT * FROM agent_runs WHERE id = ?").get(id) as AgentRunRow | undefined;
+}
 
 export function setRunTitle(id: string, title: string) {
   db.prepare("UPDATE agent_runs SET title = ? WHERE id = ?").run(title.slice(0, 120), id);
@@ -149,10 +180,12 @@ function summary(r: RunJoinRow): RunSummary {
 const JOIN = "SELECT r.*, a.name AS app_name, a.icon AS app_icon FROM agent_runs r LEFT JOIN apps a ON a.id = r.app_id";
 
 export function listRuns(limit = 50): RunSummary[] {
+  reconcileRuns();
   return (db.prepare(`${JOIN} ORDER BY r.created_at DESC, r.rowid DESC LIMIT ?`).all(limit) as RunJoinRow[]).map(summary);
 }
 
 export function getSnapshot(id: string): RunSnapshot | null {
+  reconcileRuns();
   const r = db.prepare(`${JOIN} WHERE r.id = ?`).get(id) as RunJoinRow | undefined;
   if (!r) return null;
   return {
