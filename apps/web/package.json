@@ -7,15 +7,20 @@
     "build": "next build",
     "start": "next start -p 3100",
     "typecheck": "tsc --noEmit",
-    "track": "tsx scripts/track.ts"
+    "track": "tsx scripts/track.ts",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.4.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@ranklark/core": "workspace:*",
+    "@xyflow/react": "^12.12.1",
     "better-sqlite3": "^12.11.1",
     "lucide-react": "^1.66.0",
     "next": "^16.4.4",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.4",
@@ -25,7 +30,8 @@
     "@types/react-dom": "^19.3.0",
     "tailwindcss": "^4.3.4",
     "tsx": "^4.23.15",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12"
   },
   "description": "Self-hosted ASO dashboard (Next.js + SQLite)."
 }

@@ -20,21 +20,26 @@ function open(): Database.Database {
   const db = new Database(DB_PATH);
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
-  migrate(db);
   return db;
 }
 
 globalThis.__asoDb ??= open();
 export const db: Database.Database = globalThis.__asoDb;
+// Runs on every module evaluation, not only when the connection opens: `next dev` keeps the connection on
+// globalThis across hot reloads, and a migration appended meanwhile must still apply. No-op when current.
+migrate(db);
 
 function migrate(db: Database.Database) {
-  const current = db.pragma("user_version", { simple: true }) as number;
-  MIGRATIONS.slice(current).forEach((m, i) => {
-    db.transaction(() => {
+  if ((db.pragma("user_version", { simple: true }) as number) >= MIGRATIONS.length) return;
+  // IMMEDIATE takes the write lock before reading the version, so parallel processes (e.g. `next build`
+  // workers on a fresh file) can't both apply the same migration.
+  db.transaction(() => {
+    const current = db.pragma("user_version", { simple: true }) as number;
+    MIGRATIONS.slice(current).forEach((m, i) => {
       db.exec(m.sql);
       db.pragma(`user_version = ${current + i + 1}`);
-    })();
-  });
+    });
+  }).immediate();
 }
 
 export const today = () => new Date().toISOString().slice(0, 10);

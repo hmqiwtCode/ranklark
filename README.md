@@ -28,6 +28,10 @@ data), **ASC** (your App Store Connect) or **Est.** (a disclosed formula). With 
 - **Visibility and opportunity** scores, with history charts and metadata-change markers.
 - **Keyword research.** Expand a seed through App Store autocomplete, score the results, and add them to an
   app in one click. Brand terms are detected and excluded.
+- **AI research, bring your own Claude.** Add your Claude API key (kept in your browser) or connect Claude
+  Code over MCP. A planner → workers → analyst → checker loop gathers real App Store evidence and recommends
+  keywords plus an App Name, Subtitle and Keyword field. Every claim cites a fact, and the whole process is
+  drawn live as a graph.
 - **Metadata audit.** Character and byte limits, where each tracked keyword is covered (title / subtitle /
   keyword field), wasted duplicates. Optional App Store Connect sync for every localization.
 - **Competitors and store profiles** for any app: ratings histogram, chart position, what it ranks for.
@@ -38,10 +42,14 @@ data), **ASC** (your App Store Connect) or **Est.** (a disclosed formula). With 
 | App dashboard | Keyword research |
 |---|---|
 | <img src="docs/images/app-dashboard.png" alt="App dashboard: ranks, popularity, difficulty, visibility" /> | <img src="docs/images/research.png" alt="Keyword research" /> |
+| **AI research: the live graph** | **AI research: the recommendation** |
+| <img src="docs/images/ai-research.png" alt="AI research run: planner, workers, analyst and checker drawn live as a graph" /> | <img src="docs/images/ai-research-result.png" alt="Recommended name, subtitle and keyword field with the scored keywords behind them" /> |
 | **Competitors** | **Extension activity** |
 | <img src="docs/images/competitors.png" alt="Competitors you share the top 10 with" /> | <img src="docs/images/extension.png" alt="Extension status and activity" /> |
 
-<sub>Screenshots show real public App Store data for an example app; it isn't affiliated with this project.</sub>
+<sub>Screenshots show real public App Store data. The example app appears under a placeholder name and icon
+("Tallyfinch", made with `apps/web/scripts/screenshot-db.ts`), and none of the apps shown is affiliated with this
+project.</sub>
 
 ## Quick start
 
@@ -88,7 +96,7 @@ browsers (`ASO_FETCH_MODE=extension`, for hosting several people). Both sides pa
 ## Repository layout
 
 ```
-apps/web/          Next.js dashboard + API, grouped by feature (apps, keywords, research, showcase, extension)
+apps/web/          Next.js dashboard + API, grouped by feature (apps, keywords, research, agent, settings, showcase, extension)
 apps/extension/    Chrome MV3 extension: one runner per task kind
 packages/core/     Pure shared logic: Apple endpoint parsers, scoring, metadata rules, wire protocol (+ tests)
 docs/              Architecture, extending, data sources, extension, self-hosting
@@ -101,13 +109,14 @@ docs/              Architecture, extending, data sources, extension, self-hostin
 | [Data sources](docs/data-sources.md) | Where every number comes from, optional Apple integrations, terms of use |
 | [Extension](docs/extension.md) | Install, how it works, privacy, end-to-end test, publishing |
 | [Self-hosting](docs/self-hosting.md) | Cron, production build, hosting for several people |
+| [AI research](docs/ai-research.md) | Bring your own Claude: API key or Claude Code (MCP), how the agent loop works, privacy |
 
 ## Roadmap
 
 - [ ] Verify the App Store Connect and Apple Ads clients against real accounts, and calibrate the popularity estimate
 - [ ] App Store Connect Analytics: link each metadata change to impressions and downloads
 - [ ] Write metadata back to App Store Connect after you confirm the diff
-- [ ] MCP server over the existing API
+- [x] MCP server for Claude Code (AI research tools)
 - [ ] Chrome Web Store listing
 - [ ] Google Play support
 

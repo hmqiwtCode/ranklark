@@ -159,4 +159,44 @@ export const MIGRATIONS: { name: string; sql: string }[] = [
     CREATE INDEX IF NOT EXISTS idx_keywords_app ON keywords(app_id, country);
 `,
   },
+  {
+    // IF NOT EXISTS: several processes (e.g. build workers) may open a fresh DB at once
+    name: "ai research agent runs",
+    sql: `
+    -- one row per AI research run (the API key is never stored anywhere)
+    CREATE TABLE IF NOT EXISTS agent_runs (
+      id          TEXT PRIMARY KEY,
+      title       TEXT NOT NULL,
+      app_id      INTEGER,                       -- NULL for an idea that isn't on the App Store yet
+      country     TEXT NOT NULL,
+      status      TEXT NOT NULL,                 -- running | done | failed | cancelled | interrupted
+      source      TEXT NOT NULL,                 -- api | mcp
+      model       TEXT,
+      input_json  TEXT NOT NULL,
+      config_json TEXT NOT NULL,
+      result_json TEXT,                          -- the Recommendation
+      error       TEXT,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      finished_at TEXT
+    );
+    -- the run's live event log (graph nodes, facts, findings, budget), replayed by the run page
+    CREATE TABLE IF NOT EXISTS agent_events (
+      run_id TEXT NOT NULL REFERENCES agent_runs(id) ON DELETE CASCADE,
+      seq    INTEGER NOT NULL,
+      at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+      type   TEXT NOT NULL,
+      json   TEXT NOT NULL,
+      PRIMARY KEY (run_id, seq)
+    );
+    CREATE INDEX IF NOT EXISTS idx_agent_runs_created ON agent_runs(created_at);
+`,
+  },
+  {
+    name: "agent run owner process",
+    sql: `
+    -- process that drives an API run, so a run is only called interrupted once that process is gone
+    -- (NULL for MCP runs, which Claude Code drives from outside)
+    ALTER TABLE agent_runs ADD COLUMN owner_pid INTEGER;
+`,
+  },
 ];

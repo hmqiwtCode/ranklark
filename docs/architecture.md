@@ -38,7 +38,9 @@ src/
 ├── features/                 One folder per product area
 │   ├── apps/                 your apps: create/refresh, App Store Connect sync, public store profile
 │   ├── keywords/             SERP snapshots → ranks, popularity, brand detection, dashboard queries
-│   ├── research/             keyword discovery UI
+│   ├── research/             keyword discovery UI + shared keyword scoring reads
+│   ├── agent/                AI research: contract, event reducer, rule checks, research loop, Claude client, MCP tools
+│   ├── settings/             Settings page (Claude key, MCP token, data sources)
 │   ├── showcase/             landing page live data
 │   └── extension/            device pairing, task planning, result ingestion, activity overview
 │       ├── components/       client UI for this feature
@@ -110,3 +112,4 @@ SQLite, append-only history (see `apps/web/src/server/db/migrations.ts`):
 | `hints_cache` | (prefix, storefront, day): autocomplete reuse across terms |
 | `metadata_snapshots`, `localizations` | Metadata history and App Store Connect locales |
 | `ext_devices`, `ext_events` | Paired browsers and their recent activity |
+| `agent_runs`, `agent_events` | AI research runs and their append-only event log (replayed to draw the graph) |

@@ -1,3 +1,5 @@
+import { chargeApple } from "./budget";
+
 /**
  * Per-host request spacing. Apple documents ~20 calls/minute for the iTunes
  * Search API; we stay under it by spacing calls instead of bursting.
@@ -14,6 +16,9 @@ export function lane(name: string, gapMs: number) {
 export function schedule<T>(laneName: string, gapMs: number, task: () => Promise<T>): Promise<T> {
   const l = lane(laneName, gapMs);
   const run = l.chain.then(async () => {
+    // AI agent runs: charge this request to the run that scheduled it (throws when its budget is spent).
+    // Outside a run this is a no-op. A refused request doesn't take a pacing slot.
+    chargeApple(laneName);
     const wait = l.next - Date.now();
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     l.next = Date.now() + l.gapMs;

@@ -1,11 +1,9 @@
 import { isCountry } from "@ranklark/core/apple";
 import { normalize } from "@ranklark/core/metadata";
-import { opportunity, type SerpApp, serpRank } from "@ranklark/core/scoring";
 import { NextResponse } from "next/server";
-import { isBrandTerm } from "@/features/keywords/server/brand";
-import { appleAdsPopularity, estimatePopularity, getPopularity } from "@/features/keywords/server/popularity";
+import { appleAdsPopularity, estimatePopularity } from "@/features/keywords/server/popularity";
 import { fetchSerp } from "@/features/keywords/server/serp";
-import { db, today } from "@/server/db";
+import { readScores } from "@/features/research/server/score";
 import { runJob } from "@/server/jobs";
 
 export const dynamic = "force-dynamic";
@@ -27,43 +25,11 @@ export async function POST(req: Request) {
   return NextResponse.json({ jobId: job.id });
 }
 
-const webIdsRank = (appId: number, idsJson: string, webJson: string | null) => {
-  const web = webJson ? (JSON.parse(webJson) as { id: number }[]).map((w) => w.id) : null;
-  const r = serpRank(appId, JSON.parse(idsJson) as number[], web);
-  return { rank: r.rank, approx: r.approx };
-};
-
 /** Read whatever is already scored for these terms (and, with ?appId=, where that app ranks). */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const country = isCountry(url.searchParams.get("country")) ? url.searchParams.get("country")! : "us";
   const terms = parse(url.searchParams.get("terms"));
   const appId = Number(url.searchParams.get("appId")) || null; // optional: also report where THIS app ranks
-  const serpQ = db.prepare(
-    "SELECT difficulty, result_count, top_json, ids_json, web_json FROM serp WHERE term = ? AND country = ? ORDER BY day DESC LIMIT 1",
-  );
-  const d = today();
-  return NextResponse.json(
-    terms.map((term) => {
-      const s = serpQ.get(term, country) as
-        | { difficulty: number; result_count: number; top_json: string; ids_json: string; web_json: string | null }
-        | undefined;
-      const p = getPopularity(term, country);
-      const top: SerpApp[] = s ? JSON.parse(s.top_json) : [];
-      const brand = isBrandTerm(term, top);
-      return {
-        term,
-        day: d,
-        difficulty: s?.difficulty ?? null,
-        resultCount: s?.result_count ?? null,
-        top: top.slice(0, 5),
-        brand,
-        popularity: p?.value ?? null,
-        popSource: p?.source ?? null,
-        popReason: (p?.detail?.reason as string) ?? null,
-        opportunity: brand ? null : opportunity(p?.value ?? null, s?.difficulty ?? null, null),
-        yourRank: appId && s ? webIdsRank(appId, s.ids_json, s.web_json) : null,
-      };
-    }),
-  );
+  return NextResponse.json(readScores(terms, country, appId).map((s) => ({ ...s, top: s.top.slice(0, 5) })));
 }
