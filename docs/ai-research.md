@@ -6,9 +6,13 @@ live on the page as a graph.
 
 You bring the Claude. Ranklark never ships a key and never sees your Claude account.
 
+<img src="images/ai-research.png" alt="An AI research run drawn live as a graph" width="100%" />
+
 ## Connect Claude
 
 Open **Settings** (the gear in the top bar). There are two ways to connect.
+
+<img src="images/settings.png" alt="Settings: Claude API key, model and effort, Claude Code (MCP)" width="100%" />
 
 ### 1. Your Claude API key
 
@@ -117,6 +121,8 @@ thinking shown in each step's drawer, `effort` from Settings, and server-side fa
 on models that offer it. Refusals and truncated answers are checked before any output is used.
 
 ## The run page
+
+<img src="images/ai-research-result.png" alt="The recommendation with character meters, validation and scored keywords" width="100%" />
 
 - **Graph**: one lane per round. Click any step to see its input, output, summarized thinking, tokens, model
   and timing, plus the facts or findings it produced.

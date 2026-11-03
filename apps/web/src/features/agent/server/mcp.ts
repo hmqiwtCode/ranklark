@@ -467,6 +467,14 @@ async function submitRecommendation(args: {
     validation: report,
   };
   finishRun(row.id, "done", { recommendation });
+  // the rule check alone never ends a round; a valid submission does, so the graph and KPIs don't say "not converged"
+  emit(row.id, {
+    type: "iteration.finished",
+    iteration: i,
+    converged: true,
+    reason: "Claude Code submitted a valid recommendation.",
+    gaps: [],
+  });
   emit(row.id, { type: "run.finished", status: "done", recommendation });
   countersByRun.delete(row.id);
   return text({ ok: true, issues: report.issues, usage: report.usage, page: "The recommendation is on the run page." });

@@ -42,10 +42,14 @@ data), **ASC** (your App Store Connect) or **Est.** (a disclosed formula). With 
 | App dashboard | Keyword research |
 |---|---|
 | <img src="docs/images/app-dashboard.png" alt="App dashboard: ranks, popularity, difficulty, visibility" /> | <img src="docs/images/research.png" alt="Keyword research" /> |
+| **AI research: the live graph** | **AI research: the recommendation** |
+| <img src="docs/images/ai-research.png" alt="AI research run: planner, workers, analyst and checker drawn live as a graph" /> | <img src="docs/images/ai-research-result.png" alt="Recommended name, subtitle and keyword field with the scored keywords behind them" /> |
 | **Competitors** | **Extension activity** |
 | <img src="docs/images/competitors.png" alt="Competitors you share the top 10 with" /> | <img src="docs/images/extension.png" alt="Extension status and activity" /> |
 
-<sub>Screenshots show real public App Store data for an example app; it isn't affiliated with this project.</sub>
+<sub>Screenshots show real public App Store data. The example app appears under a placeholder name and icon
+("Tallyfinch", made with `apps/web/scripts/screenshot-db.ts`), and none of the apps shown is affiliated with this
+project.</sub>
 
 ## Quick start
 
