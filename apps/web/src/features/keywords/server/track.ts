@@ -9,7 +9,8 @@ import { fetchSerp } from "./serp";
 /** Normalizes, de-duplicates and length-checks raw keyword input ("a, b" or ["a", "b"]). */
 export function cleanTerms(raw: string[] | string | undefined, max = 100): string[] {
   const list = Array.isArray(raw) ? raw : String(raw ?? "").split(/[,\n]/);
-  return [...new Set(list.map((t) => normalize(t)).filter((t) => t.length > 1 && t.length <= 60))].slice(0, max);
+  const notLinks = list.filter((t) => !/https?:\/\/|apps\.apple\.com/i.test(t)); // pasted URLs aren't keywords
+  return [...new Set(notLinks.map((t) => normalize(t)).filter((t) => t.length > 1 && t.length <= 60))].slice(0, max);
 }
 
 /**

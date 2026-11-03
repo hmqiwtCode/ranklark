@@ -166,9 +166,11 @@ export function VisibilityChart({
         </svg>
       )}
       {empty && (
-        <div className="absolute inset-0 grid place-items-center text-sm text-ink-3">
-          No rank history yet — hit <span className="mx-1 font-semibold text-ink-2">Refresh</span> once a day (or run{" "}
-          <code className="mx-1">npm run track</code>).
+        <div className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-ink-3">
+          <p>
+            No rank history yet. Add keywords below and ranks appear within a minute. After that they're checked daily (
+            <span className="font-semibold text-ink-2">Refresh</span>, the extension, or <code>pnpm track</code>).
+          </p>
         </div>
       )}
       {h && hover != null && (

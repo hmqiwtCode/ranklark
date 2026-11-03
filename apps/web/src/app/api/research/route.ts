@@ -15,7 +15,10 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const seed = normalize(url.searchParams.get("seed") ?? "");
+  const raw = url.searchParams.get("seed") ?? "";
+  if (/https?:\/\/|apps\.apple\.com/i.test(raw))
+    return NextResponse.json({ error: "That's an app link, not a keyword. Paste it on the home page to track the app." }, { status: 400 });
+  const seed = normalize(raw);
   const country = isCountry(url.searchParams.get("country")) ? url.searchParams.get("country")! : "us";
   const deep = url.searchParams.get("deep") === "1";
   if (seed.length < 2) return NextResponse.json({ error: "Seed must be at least 2 characters." }, { status: 400 });

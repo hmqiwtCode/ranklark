@@ -442,7 +442,7 @@ export function ExtensionClient({ extensionId, storeUrl }: { extensionId: string
                   <p className="text-[13px] text-ink-3">Chrome Web Store listing coming soon. For now, install the developer build:</p>
                   <ol className="ml-5 list-decimal space-y-2">
                     <li>
-                      Build it once (repo root): <Cmd>npm install && npm run ext:build</Cmd>
+                      Build it once (repo root): <Cmd>pnpm install && pnpm ext:build</Cmd>
                     </li>
                     <li>
                       Open <Cmd>chrome://extensions</Cmd> and switch on <b className="text-ink">Developer mode</b> (top right).
