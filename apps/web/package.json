@@ -30,7 +30,7 @@
     "@types/react-dom": "^19.3.0",
     "tailwindcss": "^4.3.4",
     "tsx": "^4.23.15",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.12"
   },
   "description": "Self-hosted ASO dashboard (Next.js + SQLite)."

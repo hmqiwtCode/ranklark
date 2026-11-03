@@ -15,7 +15,7 @@
     "@types/chrome": "^0.3.7",
     "esbuild": "^0.25.12",
     "puppeteer": "^25.16.0",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "description": "Chrome MV3 extension: checks ranks for your own keywords from your own browser.",
   "dependencies": {
