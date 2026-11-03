@@ -18,6 +18,8 @@
     <span id="dot" class="dot" title=""></span>
   </header>
 
+  <p id="loading" class="muted small">Loading…</p>
+
   <section id="pair" hidden>
     <h1>Connect to your dashboard</h1>
     <p class="muted">Usually automatic: just open your dashboard in this browser. Or enter its address. No account, no key.</p>
@@ -35,8 +37,10 @@
       <div id="headline" class="headline"></div>
       <div id="sub" class="muted small"></div>
       <div class="bar" id="barWrap" hidden><div id="bar"></div></div>
+      <a id="addKw" class="small" href="http://localhost:3100/apps" target="_blank" rel="noreferrer" hidden>Add keywords in the dashboard ↗</a>
       <p id="err" class="error" hidden></p>
     </div>
+    <p id="note" class="note small" hidden></p>
     <div class="kpis">
       <div><span class="muted small">Apple requests today</span><b id="reqs">0</b></div>
       <div><span class="muted small">Last run</span><b id="last">—</b></div>

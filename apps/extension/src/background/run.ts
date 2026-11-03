@@ -16,12 +16,13 @@ export async function run(reason: string) {
   running = true;
   const counts = { serp: 0, hints: 0, apps: 0, errors: 0 };
   try {
-    const tasks = await fetchTasks(cfg);
+    const { tasks, tracked } = await fetchTasks(cfg);
     await saveStatus({
       state: "running",
       startedAt: new Date().toISOString(),
       done: 0,
       total: tasks.length,
+      tracked,
       lastError: undefined,
       current: reason,
     });
@@ -71,7 +72,8 @@ export async function tick(reason: string) {
   const status = await loadStatus();
   if (status.state === "running") await saveStatus({ state: "idle" }); // a previous worker was killed mid-run; tasks are idempotent
   try {
-    const tasks = await fetchTasks(cfg);
+    const { tasks, tracked } = await fetchTasks(cfg);
+    await saveStatus({ tracked });
     if (tasks.length) await run(reason);
     else await heartbeat(cfg);
   } catch (e) {

@@ -61,11 +61,19 @@ export async function handle(msg: Message, sender: chrome.runtime.MessageSender,
       }
       return save({ server, token });
     }
-    case "run":
+    case "run": {
       if (!cfg) return { ok: false, error: "Not connected yet." };
       if (!external) await saveStatus({ hostBackoff: {}, backoffUntil: undefined }); // the user explicitly asked from the popup
-      void run("run now");
-      return { ok: true };
+      try {
+        // Answer right away with what will happen, so the popup can say so instead of looking idle.
+        const { tasks, tracked } = await fetchTasks(cfg);
+        await saveStatus({ tracked, lastError: undefined });
+        if (tasks.length) void run("run now");
+        return { ok: true, due: tasks.length, tracked: tracked ?? null };
+      } catch (e) {
+        return errorReply(e);
+      }
+    }
     case "status":
       return { ok: true, status: await loadStatus(), paired: !!cfg, server: cfg?.server ?? null, paused: !!cfg?.paused, version: VERSION };
     case "pause":

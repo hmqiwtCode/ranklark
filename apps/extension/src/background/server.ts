@@ -21,7 +21,9 @@ async function call<T>(cfg: Config, path: string, body?: unknown): Promise<T> {
   return json as T;
 }
 
-export const fetchTasks = (cfg: Config) => call<{ tasks: Task[] }>(cfg, "/api/ext/tasks").then((r) => r.tasks);
+/** What is due now, plus how many keywords the dashboard tracks in total. */
+export const fetchTasks = (cfg: Config) =>
+  call<{ tasks: Task[]; tracked?: number }>(cfg, "/api/ext/tasks").then((r) => ({ tasks: r.tasks, tracked: r.tracked }));
 export const postResult = (cfg: Config, result: TaskResult) =>
   call(cfg, "/api/ext/results", { version: VERSION, results: [result], status: snapshot() });
 export const heartbeat = (cfg: Config) => call(cfg, "/api/ext/heartbeat", { status: snapshot() }).catch(() => undefined);

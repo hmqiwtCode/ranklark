@@ -1,7 +1,7 @@
 import { EXT_PACING } from "@ranklark/core/apple";
 import { NextResponse } from "next/server";
 import { authDevice, CORS } from "@/features/extension/server/devices";
-import { buildTasks } from "@/features/extension/server/tasks";
+import { buildTasks, trackedPairs } from "@/features/extension/server/tasks";
 
 export const dynamic = "force-dynamic";
 
@@ -17,5 +17,8 @@ export async function GET(req: Request) {
       { error: "This browser isn't connected (or was removed). Reconnect it from the extension popup." },
       { status: 401, headers: CORS },
     );
-  return NextResponse.json({ day: new Date().toISOString().slice(0, 10), pacing: EXT_PACING, tasks: buildTasks() }, { headers: CORS });
+  return NextResponse.json(
+    { day: new Date().toISOString().slice(0, 10), pacing: EXT_PACING, tracked: trackedPairs().length, tasks: buildTasks() },
+    { headers: CORS },
+  );
 }

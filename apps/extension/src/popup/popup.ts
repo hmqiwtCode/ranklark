@@ -13,8 +13,20 @@ function ago(iso?: string) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
+let note: { text: string; until: number } | null = null;
+function showNote(text: string, ms = 6000) {
+  note = { text, until: Date.now() + ms };
+  void render();
+}
+
 async function render() {
-  const r = await send<StatusReply>({ type: "status" });
+  let r: StatusReply;
+  try {
+    r = await send<StatusReply>({ type: "status" });
+  } catch {
+    return; // background worker still starting; the 1 s timer retries
+  }
+  $("loading").hidden = true;
   $("version").textContent = `v${r.version}`;
   $("pair").hidden = r.paired;
   $("main").hidden = !r.paired;
@@ -25,6 +37,7 @@ async function render() {
 
   $("serverHost").textContent = new URL(r.server!).host;
   ($("open") as HTMLAnchorElement).href = `${r.server!}/apps`;
+  ($("addKw") as HTMLAnchorElement).href = `${r.server!}/apps`;
   $("pause").textContent = r.paused ? "Resume" : "Pause";
   const today = new Date().toISOString().slice(0, 10);
   let headline = "Waiting for the next check";
@@ -38,10 +51,16 @@ async function render() {
   } else if (s.state === "backoff") {
     headline = "Apple asked us to slow down";
     sub = `That Apple server resumes automatically at ${new Date(s.backoffUntil ?? Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`;
+  } else if (s.tracked === 0) {
+    headline = "No keywords tracked yet";
+    sub = "Add your app and some keywords in the dashboard. The extension then checks them automatically.";
   } else if (s.lastOkDay === today) {
     headline = "All checked for today ✓";
     sub = `Finished ${ago(s.finishedAt)}.`;
   }
+  $("addKw").hidden = s.tracked !== 0 || s.state === "running";
+  $("note").hidden = !note || Date.now() > note.until;
+  $("note").textContent = note?.text ?? "";
   $("headline").textContent = headline;
   $("sub").textContent = sub;
   $("barWrap").hidden = s.state !== "running";
@@ -68,8 +87,15 @@ $("connect").addEventListener("click", async () => {
   render();
 });
 $("run").addEventListener("click", async () => {
-  await send({ type: "run" });
-  render();
+  const btn = $("run") as HTMLButtonElement;
+  btn.disabled = true;
+  btn.textContent = "Checking…";
+  const r = await send<Reply & { due?: number; tracked?: number | null }>({ type: "run" });
+  btn.textContent = "Run now";
+  if (!r.ok) showNote(r.error ?? "Couldn't reach the dashboard.");
+  else if (r.tracked === 0) showNote("Nothing to check: no keywords are tracked yet.");
+  else if (!r.due) showNote("Nothing due: every keyword already has today's results.");
+  else showNote(`Checking ${r.due} item${r.due === 1 ? "" : "s"} now, about 15 s each to stay gentle on Apple.`);
 });
 $("pause").addEventListener("click", async () => {
   const r = await send<StatusReply>({ type: "status" });

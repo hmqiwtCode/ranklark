@@ -8,6 +8,8 @@ export type Status = DeviceStatus & {
   startedAt?: string;
   hostBackoff?: Record<string, { until: number; minutes: number }>;
   last?: { serp: number; hints: number; apps: number; errors: number };
+  /** How many (keyword, storefront) pairs the dashboard tracks; 0 = nothing to check yet. */
+  tracked?: number;
 };
 
 /** Messages the popup (internal) or a paired dashboard page (external) can send. */
