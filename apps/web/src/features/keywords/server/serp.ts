@@ -1,5 +1,5 @@
 /** One search-results snapshot per (term, country, day) → ranks for ALL your apps from a single fetch. */
-import { difficulty, type SerpApp, titleMatch } from "@ranklark/core/scoring";
+import { difficulty, type SerpApp, serpRank, titleMatch } from "@ranklark/core/scoring";
 import { type Device, type ItunesApp, icon, lookupApps, searchApps } from "@/server/apple/itunes";
 import { type WebResult, webSearch, webSearchEnabled } from "@/server/apple/web";
 import { db, today } from "@/server/db";
@@ -110,19 +110,8 @@ function recordRanks(term: string, country: string, day: string, apiIds: number[
      ON CONFLICT(app_id, country, term, day) DO UPDATE SET rank=excluded.rank, rank_web=excluded.rank_web, rank_api=excluded.rank_api, approx=excluded.approx`,
   );
   for (const { app_id } of mine) {
-    const a = apiIds.indexOf(app_id);
-    const w = webIds ? webIds.indexOf(app_id) : -1;
-    const rankApi = a >= 0 ? a + 1 : null;
-    const rankWeb = w >= 0 ? w + 1 : null;
-    let rank: number | null = null;
-    let approx = 0;
-    if (rankWeb != null) rank = rankWeb;
-    else if (rankApi != null) {
-      // the web page proved we're NOT in its window, so the API position can't be better than window+1
-      rank = webIds ? Math.max(rankApi, webIds.length + 1) : rankApi;
-      approx = webIds ? 1 : 0;
-    }
-    ins.run(app_id, country, term, day, rank, rankWeb, rankApi, approx);
+    const { rank, rankWeb, rankApi, approx } = serpRank(app_id, apiIds, webIds);
+    ins.run(app_id, country, term, day, rank, rankWeb, rankApi, approx ? 1 : 0);
   }
 }
 

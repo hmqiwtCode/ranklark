@@ -19,6 +19,8 @@ type Scored = {
   opportunity: number | null;
   brand: boolean;
   top: SerpApp[];
+  /** Where the selected app ranks for this term (from the latest snapshot); null rank = not in the top 200. */
+  yourRank: { rank: number | null; approx: boolean } | null;
 };
 
 export function ResearchClient({
@@ -40,8 +42,10 @@ export function ResearchClient({
   const [seedTop, setSeedTop] = useState<{ top: SerpApp[]; difficulty: number | null } | null>(null);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [scored, setScored] = useState<Map<string, Scored>>(new Map());
-  const [target, setTarget] = useState<number | "">(""); // never pre-pick an app
-  const [tracked, setTracked] = useState<string | null>(null);
+  // Pre-pick only when there is exactly one app; with several, the user chooses.
+  const [target, setTarget] = useState<number | "">(apps.length === 1 ? apps[0].id : "");
+  const [tracked, setTracked] = useState<{ text: string; ok: boolean } | null>(null);
+  const targetApp = apps.find((a) => a.id === target) ?? null;
   const { job, track } = useJob();
 
   const run = useCallback(
@@ -100,7 +104,9 @@ export function ResearchClient({
 
   const refreshScores = async (terms: string[]) => {
     if (!terms.length) return;
-    const r = await fetch(`/api/analyze?${new URLSearchParams({ terms: terms.join(","), country })}`);
+    const q = new URLSearchParams({ terms: terms.join(","), country });
+    if (target) q.set("appId", String(target));
+    const r = await fetch(`/api/analyze?${q}`);
     const j: Scored[] = await r.json();
     setScored((m) => {
       const n = new Map(m);
@@ -124,8 +130,17 @@ export function ResearchClient({
     if (job) refreshScores([...sel]);
   }, [job?.done]);
 
+  // Picking (or changing) your app → fetch where it ranks for everything already scored.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only when the chosen app changes
+  useEffect(() => {
+    if (target && scored.size) refreshScores([...scored.keys()]);
+  }, [target]);
+
   const trackSel = async () => {
-    if (!target) return;
+    if (!target) {
+      setTracked({ ok: false, text: "Pick which of your apps to track these for (the “Choose your app…” menu)." });
+      return;
+    }
     const terms = [...sel].filter((t) => !scored.get(t)?.brand);
     const r = await fetch(`/api/apps/${target}/keywords`, {
       method: "POST",
@@ -135,8 +150,11 @@ export function ResearchClient({
     const j = await r.json();
     setTracked(
       r.ok
-        ? `Tracking ${j.added} new keyword${j.added === 1 ? "" : "s"} (brand names skipped) — ranks are being checked in the background.`
-        : j.error,
+        ? {
+            ok: true,
+            text: `Tracking ${j.added} new keyword${j.added === 1 ? "" : "s"} for ${targetApp?.name ?? "your app"} (brand names skipped). Ranks are being checked now.`,
+          }
+        : { ok: false, text: j.error ?? "Couldn't add them." },
     );
   };
 
@@ -246,7 +264,7 @@ export function ResearchClient({
                       </option>
                     ))}
                   </select>
-                  <button onClick={trackSel} disabled={!sel.size || !target} className="btn-primary h-9 px-3 text-sm">
+                  <button onClick={trackSel} disabled={!sel.size} className="btn-primary h-9 px-3 text-sm">
                     Track selected
                   </button>
                 </>
@@ -257,7 +275,16 @@ export function ResearchClient({
               )}
             </div>
           </div>
-          {tracked && <p className="border-b border-line/70 px-4 py-2 text-xs text-good">{tracked}</p>}
+          {tracked && (
+            <p className={`border-b border-line/70 px-4 py-2.5 text-[13px] ${tracked.ok ? "text-good" : "text-warn"}`}>
+              {tracked.text}
+              {tracked.ok && target && (
+                <Link href={`/apps/${target}?country=${country}`} className="ml-2 font-semibold text-ink underline underline-offset-2">
+                  Open {targetApp?.name ?? "app"} →
+                </Link>
+              )}
+            </p>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-left text-[13px]">
               <thead className="text-[12px] text-ink-3">
@@ -283,6 +310,11 @@ export function ResearchClient({
                   <th className="px-3 font-medium">
                     <L term="difficulty">Difficulty</L>
                   </th>
+                  {targetApp && (
+                    <th className="px-3 font-medium" title={`Where ${targetApp.name} ranks today`}>
+                      <L term="rank">Your rank</L>
+                    </th>
+                  )}
                   <th className="px-3 font-medium">
                     <L term="opportunity">Opportunity</L>
                   </th>
@@ -331,6 +363,24 @@ export function ResearchClient({
                     <td className="px-3">
                       <Meter value={c.s?.difficulty ?? null} color="var(--color-series-orange)" />
                     </td>
+                    {targetApp && (
+                      <td className="px-3 tabular font-semibold">
+                        {!c.s ? (
+                          <span className="font-normal text-ink-3" title="Score it first">
+                            ·
+                          </span>
+                        ) : c.s.yourRank?.rank ? (
+                          <span className={c.s.yourRank.rank <= 10 ? "text-good" : ""}>
+                            {c.s.yourRank.approx ? "≈" : "#"}
+                            {c.s.yourRank.rank}
+                          </span>
+                        ) : (
+                          <span className="whitespace-nowrap text-xs font-normal text-ink-3" title="Not in the top 200 results">
+                            &gt; 200
+                          </span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-3 tabular font-semibold">
                       {c.s?.brand ? (
                         <span className="text-xs font-normal text-warn">skip</span>

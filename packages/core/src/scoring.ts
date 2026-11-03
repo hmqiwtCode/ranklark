@@ -104,3 +104,20 @@ export function hintsScore(foundAt: number | null, position: number | null, list
   const pos = 1 - (position - 1) / Math.max(listSize, 10);
   return Math.round(10 + 90 * (0.75 * prefix + 0.25 * pos));
 }
+
+/**
+ * Where an app sits in one search snapshot.
+ *   rankWeb = position on the App Store web page (true order, top ~12)
+ *   rankApi = position in the iTunes Search API (≤200, different order)
+ * Displayed rank prefers the web order. Beyond the web window it falls back to the API position, marked
+ * approximate and never better than window+1 (the web page proved the app isn't inside it).
+ */
+export function serpRank(appId: number, apiIds: number[], webIds: number[] | null) {
+  const a = apiIds.indexOf(appId);
+  const w = webIds ? webIds.indexOf(appId) : -1;
+  const rankApi = a >= 0 ? a + 1 : null;
+  const rankWeb = w >= 0 ? w + 1 : null;
+  if (rankWeb != null) return { rank: rankWeb, rankWeb, rankApi, approx: false };
+  if (rankApi != null) return { rank: webIds ? Math.max(rankApi, webIds.length + 1) : rankApi, rankWeb, rankApi, approx: !!webIds };
+  return { rank: null, rankWeb, rankApi, approx: false };
+}
