@@ -1,0 +1,31 @@
+{
+  "name": "@ranklark/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100",
+    "typecheck": "tsc --noEmit",
+    "track": "tsx scripts/track.ts"
+  },
+  "dependencies": {
+    "@ranklark/core": "workspace:*",
+    "better-sqlite3": "^12.11.1",
+    "lucide-react": "^1.66.0",
+    "next": "^16.4.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.4",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.4",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  },
+  "description": "Self-hosted ASO dashboard (Next.js + SQLite)."
+}

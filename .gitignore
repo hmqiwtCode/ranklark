@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+
+# builds
+.next/
+dist/
+dist-store/
+*.zip
+*.tsbuildinfo
+next-env.d.ts
+
+# local data & secrets — never commit
+apps/web/data/
+*.db
+*.db-*
+.env
+.env*.local
+*.p8
+*.pem
+.keys/
+
+# private research workspace (kept out of the public repo)
+private/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

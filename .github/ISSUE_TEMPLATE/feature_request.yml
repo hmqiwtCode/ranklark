@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest an idea or a new data source
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations: { required: true }
+  - type: textarea
+    id: idea
+    attributes:
+      label: Proposed solution
+      description: Where would it live? See docs/extending.md for the usual places.
+  - type: textarea
+    id: source
+    attributes:
+      label: Data source (if any)
+      description: Official API, or an undocumented endpoint? How did you verify it, and when?

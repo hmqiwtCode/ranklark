@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Ranklark – App Store Rank Checker",
+  "short_name": "Ranklark",
+  "version": "0.1.0",
+  "description": "Checks App Store ranks for your own tracked keywords from your browser and sends them to your Ranklark dashboard.",
+  "minimum_chrome_version": "120",
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Ranklark",
+    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png" }
+  },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "permissions": ["storage", "alarms"],
+  "host_permissions": ["https://itunes.apple.com/*", "https://search.itunes.apple.com/*", "https://apps.apple.com/*"],
+  "externally_connectable": { "matches": ["http://localhost/*", "http://127.0.0.1/*"] }
+}

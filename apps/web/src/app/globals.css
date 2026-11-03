@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   Design tokens — lifted from datafa.st (DaisyUI "dark" theme values)
+   base-300 page · base-100 cards · orange primary · light-blue data
+   ------------------------------------------------------------------ */
+@theme {
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-hand: var(--font-caveat), cursive;
+
+  --color-page: oklch(23.93% 0 0); /* #1f1f1f */
+  --color-card: oklch(26.86% 0 0); /* #262626 */
+  --color-well: oklch(24.78% 0 0); /* #212121 */
+  --color-line: oklch(32% 0 0); /* hairlines */
+  --color-line-strong: oklch(38% 0 0);
+  --color-ink: oklch(89.8% 0.0017 67.8); /* #dedddc */
+  --color-ink-2: oklch(72% 0.002 67.8);
+  --color-ink-3: oklch(56% 0.002 67.8);
+  --color-primary: oklch(65.31% 0.1637 37.22); /* #e16540 */
+  --color-primary-ink: oklch(100% 0 0);
+  --color-sky: oklch(82.36% 0.0962 242.82); /* #8dcdff – single-series line */
+  --color-series-blue: #3e96ea; /* validated pair with primary */
+  --color-series-orange: #e16540;
+  --color-good: oklch(72% 0.15 155);
+  --color-warn: oklch(78% 0.14 80);
+  --color-bad: oklch(65% 0.19 25);
+  --radius-box: 1rem;
+}
+
+html {
+  color-scheme: dark;
+}
+body {
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* DataFast primary button: inset bottom shade + soft orange glow */
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+  border: 1px solid var(--color-primary);
+  border-radius: 0.5rem;
+  font-weight: 600;
+  box-shadow:
+    rgba(114, 36, 13, 0.64) 0 -1px 2px 0 inset,
+    rgba(0, 0, 0, 0.06) 0 1px 1px 0,
+    rgba(225, 101, 64, 0.06) 0 0 0 1px,
+    rgba(225, 101, 64, 0.32) 0 8px 16px -8px;
+  transition:
+    filter 0.15s,
+    transform 0.15s;
+}
+.btn-primary:hover {
+  filter: brightness(1.06);
+}
+.btn-primary:active {
+  transform: translateY(1px);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.btn-ghost:hover {
+  background: oklch(30% 0 0);
+  border-color: var(--color-line-strong);
+}
+
+.field {
+  background: var(--color-well);
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field:focus {
+  border-color: var(--color-primary);
+}
+.field::placeholder {
+  color: var(--color-ink-3);
+}
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-box);
+}
+
+/* segmented tabs (Channel | Referrer | Campaign) */
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 0.6rem;
+  background: var(--color-well);
+  border: 1px solid var(--color-line);
+}
+.seg > * {
+  padding: 4px 10px;
+  border-radius: 0.45rem;
+  font-size: 13px;
+  color: var(--color-ink-3);
+  white-space: nowrap;
+}
+.seg > [data-active="true"] {
+  background: oklch(31% 0 0);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+.seg > *:hover {
+  color: var(--color-ink);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* subtle scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(38% 0 0) transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

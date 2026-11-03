@@ -1,0 +1,35 @@
+import { isCountry } from "@ranklark/core/apple";
+import { normalize, phrasesFrom } from "@ranklark/core/metadata";
+import type { SerpApp } from "@ranklark/core/scoring";
+import { NextResponse } from "next/server";
+import { expandSeed } from "@/features/keywords/server/popularity";
+import { fetchSerp } from "@/features/keywords/server/serp";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * Keyword discovery for a seed term:
+ *   - autocomplete expansions (what Apple suggests while typing)
+ *   - phrases from the titles of the apps that rank top-10 for the seed
+ * Description/URL n-grams are deliberately NOT used (that is where junk like "terms term" comes from).
+ */
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const seed = normalize(url.searchParams.get("seed") ?? "");
+  const country = isCountry(url.searchParams.get("country")) ? url.searchParams.get("country")! : "us";
+  const deep = url.searchParams.get("deep") === "1";
+  if (seed.length < 2) return NextResponse.json({ error: "Seed must be at least 2 characters." }, { status: 400 });
+
+  const [hints, serp] = await Promise.all([expandSeed(seed, country, deep).catch(() => []), fetchSerp(seed, country).catch(() => null)]);
+
+  const top: SerpApp[] = serp ? JSON.parse(serp.top_json) : [];
+  const fromTitles = new Map<string, number>();
+  for (const a of top) for (const p of phrasesFrom(a.name)) fromTitles.set(p, (fromTitles.get(p) ?? 0) + 1);
+  const competitor = [...fromTitles]
+    .filter(([p, n]) => n >= 2 || p.split(" ").length >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 40)
+    .map(([term, apps]) => ({ term, apps }));
+
+  return NextResponse.json({ seed, country, hints, competitor, top, difficulty: serp?.difficulty ?? null });
+}

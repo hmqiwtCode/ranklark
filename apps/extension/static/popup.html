@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ranklark</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <svg viewBox="0 0 28 28" width="20" height="20" aria-hidden="true">
+      <rect x="3" y="14" width="5" height="11" rx="2.5" fill="#e16540" opacity="0.55"/>
+      <rect x="11.5" y="9" width="5" height="16" rx="2.5" fill="#e16540" opacity="0.8"/>
+      <rect x="20" y="3" width="5" height="22" rx="2.5" fill="#e16540"/>
+    </svg>
+    <strong>Ranklark</strong>
+    <span id="version" class="muted"></span>
+    <span id="dot" class="dot" title=""></span>
+  </header>
+
+  <section id="pair" hidden>
+    <h1>Connect to your dashboard</h1>
+    <p class="muted">Usually automatic: just open your dashboard in this browser. Or enter its address. No account, no key.</p>
+    <label>Dashboard address<input id="server" value="http://localhost:3100" spellcheck="false" /></label>
+    <button id="connect" class="primary">Connect</button>
+    <p id="pairError" class="error" hidden></p>
+  </section>
+
+  <section id="main" hidden>
+    <div class="row between">
+      <span class="muted" id="serverHost"></span>
+      <a id="open" href="http://localhost:3100/apps" target="_blank" rel="noreferrer">Open dashboard ↗</a>
+    </div>
+    <div class="card">
+      <div id="headline" class="headline"></div>
+      <div id="sub" class="muted small"></div>
+      <div class="bar" id="barWrap" hidden><div id="bar"></div></div>
+      <p id="err" class="error" hidden></p>
+    </div>
+    <div class="kpis">
+      <div><span class="muted small">Apple requests today</span><b id="reqs">0</b></div>
+      <div><span class="muted small">Last run</span><b id="last">—</b></div>
+      <div><span class="muted small">Last result</span><b id="counts">—</b></div>
+    </div>
+    <div class="row">
+      <button id="run" class="primary">Run now</button>
+      <button id="pause" class="ghost">Pause</button>
+    </div>
+    <button id="unpair" class="link">Disconnect</button>
+  </section>
+
+  <footer class="muted small">Runs in your browser with your own App Store limit. Only your tracked keywords. Never reads your browsing or cookies.</footer>
+  <script src="popup.js"></script>
+</body>
+</html>

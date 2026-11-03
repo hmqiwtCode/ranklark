@@ -1,0 +1,24 @@
+{
+  "name": "@ranklark/extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:store": "node scripts/build.mjs --store",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "icons": "node scripts/icons.mjs",
+    "e2e": "node scripts/e2e.mjs"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.7",
+    "esbuild": "^0.25.12",
+    "puppeteer": "^25.16.0",
+    "typescript": "^5.9.3"
+  },
+  "description": "Chrome MV3 extension: checks ranks for your own keywords from your own browser.",
+  "dependencies": {
+    "@ranklark/core": "workspace:*"
+  }
+}

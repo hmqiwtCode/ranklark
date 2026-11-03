@@ -1,0 +1,30 @@
+{
+  "name": "ranklark",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open-source, self-hosted App Store Optimization: keyword rank tracking, popularity and difficulty estimates, metadata audit, plus a Chrome extension that checks ranks from your own browser.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @ranklark/web dev",
+    "build": "pnpm -r build",
+    "start": "pnpm --filter @ranklark/web start",
+    "track": "pnpm --filter @ranklark/web track",
+    "ext:build": "pnpm --filter @ranklark/extension build",
+    "ext:watch": "pnpm --filter @ranklark/extension watch",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "screenshots": "node scripts/screenshots.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
+    "typescript": "^5.9.3",
+    "puppeteer": "^25.16.0"
+  },
+  "packageManager": "pnpm@10.10.0"
+}

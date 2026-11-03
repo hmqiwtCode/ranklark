@@ -1,0 +1,368 @@
+"use client";
+
+import { STOREFRONTS } from "@ranklark/core/apple";
+import type { SerpApp } from "@ranklark/core/scoring";
+import { Loader2, Search, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { JobBar, useJob } from "@/components/actions";
+import { Help, L } from "@/components/help";
+import { AppIcon, Meter, SourceBadge } from "@/components/ui";
+
+type Cand = { term: string; origin: "autocomplete" | "competitor titles"; note: string };
+type Scored = {
+  term: string;
+  difficulty: number | null;
+  popularity: number | null;
+  popSource: string | null;
+  popReason: string | null;
+  opportunity: number | null;
+  brand: boolean;
+  top: SerpApp[];
+};
+
+export function ResearchClient({
+  apps,
+  initialSeed = "",
+  initialCountry = "us",
+}: {
+  apps: { id: number; name: string; icon: string | null; country: string }[];
+  initialSeed?: string;
+  initialCountry?: string;
+}) {
+  const [seed, setSeed] = useState(initialSeed);
+  const [country, setCountry] = useState(initialCountry);
+  const [deep, setDeep] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [ranSeed, setRanSeed] = useState("");
+  const [cands, setCands] = useState<Cand[]>([]);
+  const [seedTop, setSeedTop] = useState<{ top: SerpApp[]; difficulty: number | null } | null>(null);
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [scored, setScored] = useState<Map<string, Scored>>(new Map());
+  const [target, setTarget] = useState<number | "">(""); // never pre-pick an app
+  const [tracked, setTracked] = useState<string | null>(null);
+  const { job, track } = useJob();
+
+  const run = useCallback(
+    async (s: string, c: string) => {
+      setBusy(true);
+      setErr(null);
+      setCands([]);
+      setSel(new Set());
+      setScored(new Map());
+      setTracked(null);
+      const r = await fetch(`/api/research?${new URLSearchParams({ seed: s, country: c, deep: deep ? "1" : "0" })}`);
+      const j = await r.json();
+      setBusy(false);
+      if (!r.ok) return setErr(j.error);
+      setRanSeed(s);
+      const list: Cand[] = [
+        ...j.hints.map((h: { term: string; from: string; position: number }) => ({
+          term: h.term,
+          origin: "autocomplete" as const,
+          note: `“${h.from.trim()}…” → #${h.position}`,
+        })),
+        ...j.competitor
+          .filter((x: { term: string }) => !j.hints.some((h: { term: string }) => h.term === x.term))
+          .map((x: { term: string; apps: number }) => ({
+            term: x.term,
+            origin: "competitor titles" as const,
+            note: `in ${x.apps} top-10 title${x.apps > 1 ? "s" : ""}`,
+          })),
+      ];
+      setCands(list);
+      setSeedTop({ top: j.top, difficulty: j.difficulty });
+      setSel(
+        new Set(
+          list
+            .filter((x) => x.origin === "autocomplete")
+            .slice(0, 10)
+            .map((x) => x.term),
+        ),
+      );
+      // show whatever is already scored (cached) right away
+      const pre = await fetch(`/api/analyze?${new URLSearchParams({ terms: list.map((x) => x.term).join(","), country: c })}`).then((x) =>
+        x.json(),
+      );
+      setScored(new Map((pre as Scored[]).filter((x) => x.difficulty != null || x.popularity != null).map((x) => [x.term, x])));
+    },
+    [deep],
+  );
+
+  const auto = useRef(false);
+  useEffect(() => {
+    if (!auto.current && initialSeed.length >= 2) {
+      auto.current = true;
+      run(initialSeed, initialCountry);
+    }
+  }, [initialSeed, initialCountry, run]);
+
+  const refreshScores = async (terms: string[]) => {
+    if (!terms.length) return;
+    const r = await fetch(`/api/analyze?${new URLSearchParams({ terms: terms.join(","), country })}`);
+    const j: Scored[] = await r.json();
+    setScored((m) => {
+      const n = new Map(m);
+      for (const s of j) n.set(s.term, s);
+      return n;
+    });
+  };
+
+  const score = async () => {
+    const r = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ terms: [...sel], country }),
+    });
+    const j = await r.json();
+    track(j.jobId);
+  };
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-score only when the background job makes progress
+  useEffect(() => {
+    if (job) refreshScores([...sel]);
+  }, [job?.done]);
+
+  const trackSel = async () => {
+    if (!target) return;
+    const terms = [...sel].filter((t) => !scored.get(t)?.brand);
+    const r = await fetch(`/api/apps/${target}/keywords`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ terms, country, source: "research" }),
+    });
+    const j = await r.json();
+    setTracked(
+      r.ok
+        ? `Tracking ${j.added} new keyword${j.added === 1 ? "" : "s"} (brand names skipped) — ranks are being checked in the background.`
+        : j.error,
+    );
+  };
+
+  const rows = useMemo(() => {
+    const withScore = cands.map((c) => ({ ...c, s: scored.get(c.term) }));
+    return withScore.sort((a, b) => (b.s?.opportunity ?? (b.s?.brand ? -2 : -1)) - (a.s?.opportunity ?? (a.s?.brand ? -2 : -1)));
+  }, [cands, scored]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          run(seed, country);
+        }}
+        className="card flex flex-wrap items-center gap-2 p-3"
+      >
+        <Search className="ml-1 h-4 w-4 text-ink-3" />
+        <input
+          value={seed}
+          onChange={(e) => setSeed(e.target.value)}
+          placeholder="Seed keyword, e.g. habit tracker"
+          className="h-10 min-w-48 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3"
+          required
+          minLength={2}
+        />
+        <select value={country} onChange={(e) => setCountry(e.target.value)} className="field h-10 px-2 text-sm" aria-label="Storefront">
+          {Object.entries(STOREFRONTS).map(([c, s]) => (
+            <option key={c} value={c}>
+              {s.flag} {c.toUpperCase()}
+            </option>
+          ))}
+        </select>
+        <label
+          className="flex items-center gap-2 px-2 text-sm text-ink-2"
+          title="Also expands “seed a…z” — 26 more autocomplete calls (~35s)"
+        >
+          <input type="checkbox" checked={deep} onChange={(e) => setDeep(e.target.checked)} className="accent-[var(--color-primary)]" />{" "}
+          Deep
+        </label>
+        <button disabled={busy} className="btn-primary flex h-10 items-center gap-2 px-4 text-sm">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}Discover
+        </button>
+      </form>
+      {err && <p className="text-sm text-bad">{err}</p>}
+
+      {seedTop && (
+        <section className="card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-[15px] font-semibold">
+              <L term="topApps">Top results for “{ranSeed}”</L>
+            </h2>
+            <span className="inline-flex items-center gap-1 text-xs text-ink-3">
+              difficulty <span className="tabular text-ink">{seedTop.difficulty ?? "—"}</span>
+              <Help term="difficulty" />
+            </span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            {seedTop.top.slice(0, 10).map((a, i) => (
+              <Link
+                key={a.id}
+                href={`/store/${a.id}?country=${country}`}
+                className="flex items-center gap-2 rounded-lg bg-well p-2 transition hover:bg-white/[0.06]"
+                title={`Open ${a.name}`}
+              >
+                <span className="w-5 text-right text-xs tabular text-ink-3">{i + 1}</span>
+                <AppIcon src={a.icon} name={a.name} size={30} />
+                <div className="min-w-0">
+                  <div className="truncate text-[12px] font-semibold">{a.name}</div>
+                  <div className="truncate text-[11px] text-ink-3">{a.subtitle ?? `${a.ratingCount.toLocaleString()} ratings`}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {cands.length > 0 && (
+        <section className="card">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/70 px-4 py-3">
+            <div className="text-[15px] font-semibold">
+              <L term="candidates">{cands.length} candidates</L>{" "}
+              <span className="text-sm font-normal text-ink-3">· {sel.size} selected</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <JobBar job={job} />
+              <button
+                onClick={score}
+                disabled={!sel.size || (!!job && !job.finished)}
+                className="btn-ghost h-9 px-3 text-sm"
+                title="Measure popularity + difficulty for each selected keyword (~10s each)"
+              >
+                Score selected
+              </button>
+              {apps.length ? (
+                <>
+                  <select
+                    value={target}
+                    onChange={(e) => setTarget(e.target.value ? Number(e.target.value) : "")}
+                    className="field h-9 max-w-52 px-2 text-sm"
+                    aria-label="Track for app"
+                  >
+                    <option value="">Choose your app…</option>
+                    {apps.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button onClick={trackSel} disabled={!sel.size || !target} className="btn-primary h-9 px-3 text-sm">
+                    Track selected
+                  </button>
+                </>
+              ) : (
+                <Link href="/apps" className="btn-primary flex h-9 items-center px-3 text-sm">
+                  Add your app to track these
+                </Link>
+              )}
+            </div>
+          </div>
+          {tracked && <p className="border-b border-line/70 px-4 py-2 text-xs text-good">{tracked}</p>}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[860px] text-left text-[13px]">
+              <thead className="text-[12px] text-ink-3">
+                <tr className="border-b border-line/70">
+                  <th className="w-10 py-2.5 pl-4">
+                    <input
+                      type="checkbox"
+                      className="accent-[var(--color-primary)]"
+                      checked={sel.size === cands.length}
+                      onChange={(e) => setSel(e.target.checked ? new Set(cands.map((c) => c.term)) : new Set())}
+                      aria-label="Select all"
+                    />
+                  </th>
+                  <th className="px-3 font-medium">
+                    <L term="keyword">Keyword</L>
+                  </th>
+                  <th className="px-3 font-medium">
+                    <L term="foundVia">Found via</L>
+                  </th>
+                  <th className="px-3 font-medium">
+                    <L term="popularity">Popularity</L>
+                  </th>
+                  <th className="px-3 font-medium">
+                    <L term="difficulty">Difficulty</L>
+                  </th>
+                  <th className="px-3 font-medium">
+                    <L term="opportunity">Opportunity</L>
+                  </th>
+                  <th className="px-3 font-medium">
+                    <L term="topApps">Top apps</L>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((c) => (
+                  <tr key={c.term} className={`border-b border-line/40 hover:bg-white/[0.025] ${c.s?.brand ? "opacity-60" : ""}`}>
+                    <td className="py-2 pl-4">
+                      <input
+                        type="checkbox"
+                        className="accent-[var(--color-primary)]"
+                        checked={sel.has(c.term)}
+                        onChange={(e) =>
+                          setSel((s) => {
+                            const n = new Set(s);
+                            if (e.target.checked) n.add(c.term);
+                            else n.delete(c.term);
+                            return n;
+                          })
+                        }
+                        aria-label={`Select ${c.term}`}
+                      />
+                    </td>
+                    <td className="px-3 font-medium">
+                      {c.term}
+                      {c.s?.brand && (
+                        <span className="ml-2 inline-flex items-center rounded bg-warn/15 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-warn">
+                          Brand
+                          <Help term="brand" className="ml-1 border-warn/40 text-warn" />
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 text-xs text-ink-3">
+                      {c.origin} · {c.note}
+                    </td>
+                    <td className="px-3">
+                      <div className="flex items-center gap-1.5">
+                        <Meter value={c.s?.popularity ?? null} color="var(--color-series-blue)" title={c.s?.popReason ?? undefined} />
+                        <SourceBadge source={c.s?.popSource} title={c.s?.popReason ?? undefined} />
+                      </div>
+                    </td>
+                    <td className="px-3">
+                      <Meter value={c.s?.difficulty ?? null} color="var(--color-series-orange)" />
+                    </td>
+                    <td className="px-3 tabular font-semibold">
+                      {c.s?.brand ? (
+                        <span className="text-xs font-normal text-warn">skip</span>
+                      ) : (
+                        (c.s?.opportunity ?? <span className="font-normal text-ink-3">—</span>)
+                      )}
+                    </td>
+                    <td className="px-3">
+                      <div className="flex -space-x-1">
+                        {(c.s?.top ?? []).map((a) => (
+                          <Link
+                            key={a.id}
+                            href={`/store/${a.id}?country=${country}`}
+                            title={`${a.name} — click to open`}
+                            className="transition hover:z-10 hover:-translate-y-0.5"
+                          >
+                            <AppIcon src={a.icon} name={a.name} size={20} />
+                          </Link>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="px-4 py-2.5 text-[11px] text-ink-3">
+            Ideas come only from Apple autocomplete and competitor <em>titles</em>, never from descriptions or URLs. Brand = another
+            app&apos;s name: skipped when you track.
+          </p>
+        </section>
+      )}
+    </div>
+  );
+}

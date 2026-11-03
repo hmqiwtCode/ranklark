@@ -1,0 +1,30 @@
+name: Bug report
+description: Something is broken or shows a wrong number
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you see instead?
+    validations: { required: true }
+  - type: dropdown
+    id: part
+    attributes:
+      label: Where?
+      options: [Dashboard, Extension, Rank / popularity data (Apple changed something?), Install / build, Docs]
+    validations: { required: true }
+  - type: input
+    id: storefront
+    attributes:
+      label: Storefront + keyword (if data-related)
+      placeholder: "us · habit tracker"
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "Ranklark 0.1.0 · Node 22 · Chrome 156 · macOS"

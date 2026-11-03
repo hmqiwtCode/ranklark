@@ -1,0 +1,23 @@
+{
+  "name": "@ranklark/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, isomorphic App Store logic shared by the dashboard and the extension: endpoint URL builders + parsers, metadata tokenizer, scoring, wire protocol.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./apple": "./src/apple/index.ts",
+    "./metadata": "./src/metadata.ts",
+    "./protocol": "./src/protocol.ts",
+    "./scoring": "./src/scoring.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12"
+  }
+}
