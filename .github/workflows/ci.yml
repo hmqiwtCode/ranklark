@@ -31,7 +31,7 @@ jobs:
       - run: pnpm build
       - name: Package extension (store build)
         run: pnpm --filter @ranklark/extension build:store
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ranklark-extension
           path: apps/extension/dist-store
