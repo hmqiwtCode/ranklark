@@ -1,4 +1,5 @@
-import type { Message, Reply, StatusReply } from "../shared/types";
+import { STOREFRONTS } from "@ranklark/core/apple";
+import type { Message, PageApp, Reply, StatusReply } from "../shared/types";
 
 /** Toolbar popup: connect by dashboard address (no login), show progress, run/pause/disconnect. */
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -14,6 +15,7 @@ function ago(iso?: string) {
 }
 
 let note: { text: string; until: number } | null = null;
+let hereStarted = false;
 function showNote(text: string, ms = 6000) {
   note = { text, until: Date.now() + ms };
   void render();
@@ -35,6 +37,10 @@ async function render() {
   dot.className = `dot ${s.state === "running" ? "run" : s.state === "error" || s.state === "backoff" ? "bad" : r.paired ? "ok" : ""}`;
   if (!r.paired) return;
 
+  if (!hereStarted) {
+    hereStarted = true;
+    void initHere(r.server!);
+  }
   $("serverHost").textContent = new URL(r.server!).host;
   ($("open") as HTMLAnchorElement).href = `${r.server!}/apps`;
   ($("addKw") as HTMLAnchorElement).href = `${r.server!}/apps`;
@@ -109,3 +115,65 @@ $("unpair").addEventListener("click", async () => {
 
 render();
 setInterval(render, 1000);
+
+// ---------------------------------------------------------------- "Track this app" on App Store pages
+
+/** apps.apple.com/{cc}/app/{slug}/id{N} → app id + storefront (host permission lets us read this tab's URL). */
+function appFromUrl(url: string | undefined): { appId: number; country: string } | null {
+  const m = url?.match(/^https:\/\/apps\.apple\.com\/([a-z]{2})\/app\/(?:[^/?#]+\/)?id(\d+)/);
+  return m ? { appId: Number(m[2]), country: m[1] } : null;
+}
+
+function showHere(app: PageApp, server: string) {
+  const sf = STOREFRONTS[app.country];
+  $("hereCountry").textContent = sf ? `${sf.flag} ${sf.name}` : app.country.toUpperCase();
+  if (app.name && !app.name.startsWith("App ")) $("hereName").textContent = app.name;
+  $("hereState").textContent = app.tracked
+    ? app.keywords.length
+      ? `Tracked · ${app.keywords.length} keyword${app.keywords.length === 1 ? "" : "s"}: ${app.keywords.slice(0, 4).join(", ")}${app.keywords.length > 4 ? "…" : ""}`
+      : "Tracked · no keywords yet. Add some below."
+    : "Not tracked yet.";
+  $("hereTrack").textContent = app.tracked ? "Add keywords" : "Track this app";
+  const open = $("hereOpen") as HTMLAnchorElement;
+  open.hidden = !app.tracked;
+  open.href = `${server}/apps/${app.appId}?country=${app.country}`;
+}
+
+async function initHere(server: string) {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }).catch(() => []);
+  const page = appFromUrl(tab?.url);
+  if (!page) return;
+  if (!STOREFRONTS[page.country]) page.country = "us"; // storefront not supported yet → closest default
+  $("here").hidden = false;
+  $("hereName").textContent = (tab?.title ?? "This app").replace(/\s+[-–|]\s+.*$/, "").replace(/ (on|trên) (the )?App Store.*$/i, "");
+  const r = await send<Reply & { app?: PageApp }>({ type: "pageApp", ...page });
+  if (r.ok && r.app) showHere(r.app, server);
+  else $("hereState").textContent = r.error ?? "Couldn't reach the dashboard.";
+
+  $("hereTrack").addEventListener("click", async () => {
+    const btn = $("hereTrack") as HTMLButtonElement;
+    const input = $("hereTerms") as HTMLInputElement;
+    const terms = input.value
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+    const res = await send<Reply & { app?: PageApp }>({ type: "track", ...page, terms });
+    btn.disabled = false;
+    if (!res.ok || !res.app) {
+      btn.textContent = "Try again";
+      showNote(res.error ?? "Couldn't reach the dashboard.");
+      return;
+    }
+    input.value = "";
+    showHere(res.app, server);
+    showNote(
+      res.app.added
+        ? `Added ${res.app.added} keyword${res.app.added === 1 ? "" : "s"}. Checking now, about 15 s each.`
+        : res.app.keywords.length
+          ? "App tracked. Checking it now."
+          : "App tracked. Add keywords to see where it ranks.",
+    );
+  });
+}

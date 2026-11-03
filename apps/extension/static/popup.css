@@ -212,3 +212,18 @@ footer {
   margin-top: 8px;
   color: #e16540;
 }
+
+.here {
+  margin-bottom: 10px;
+  border-color: rgba(225, 101, 64, 0.45);
+}
+#hereForm {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+#hereOpen {
+  display: inline-block;
+  margin-top: 8px;
+  color: #e16540;
+}

@@ -89,12 +89,14 @@ export async function addApp(id: number, country: string) {
   if (fetchMode() === "extension") {
     // the extension fills in name/icon/ratings on its next check
     db.prepare("INSERT OR IGNORE INTO apps (id, name, primary_country, is_mine) VALUES (?, ?, ?, 1)").run(id, `App ${id}`, country);
+    db.prepare("UPDATE apps SET is_mine = 1 WHERE id = ?").run(id); // it may exist already as a competitor
     const row = db.prepare("SELECT name FROM apps WHERE id = ?").get(id) as { name: string };
     return { trackId: id, trackName: row.name } as ItunesApp;
   }
   const [a] = await lookupApps([id], country);
   if (!a) throw new Error(`App ${id} not found in the ${country.toUpperCase()} store`);
   upsertAppFromItunes(a, country, true);
-  await fillSubtitles([id], country).catch(() => 0);
+  db.prepare("UPDATE apps SET is_mine = 1 WHERE id = ?").run(id); // it may exist already as a competitor
+  void fillSubtitles([id], country).catch(() => 0); // optional; don't make the caller wait for it
   return a;
 }

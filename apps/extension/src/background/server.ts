@@ -1,6 +1,6 @@
 /** Client for the user's own dashboard server (see @ranklark/core/protocol for the wire format). */
 import { type Task, type TaskResult, VERSION_HEADER } from "@ranklark/core/protocol";
-import type { Config } from "../shared/types";
+import type { Config, PageApp } from "../shared/types";
 import { snapshot, VERSION } from "./state";
 
 export class Unauthorized extends Error {}
@@ -27,6 +27,11 @@ export const fetchTasks = (cfg: Config) =>
 export const postResult = (cfg: Config, result: TaskResult) =>
   call(cfg, "/api/ext/results", { version: VERSION, results: [result], status: snapshot() });
 export const heartbeat = (cfg: Config) => call(cfg, "/api/ext/heartbeat", { status: snapshot() }).catch(() => undefined);
+
+export const pageApp = (cfg: Config, appId: number, country: string) =>
+  call<PageApp>(cfg, `/api/ext/track?${new URLSearchParams({ appId: String(appId), country })}`);
+export const trackApp = (cfg: Config, appId: number, country: string, terms: string[]) =>
+  call<PageApp>(cfg, "/api/ext/track", { appId, country, terms });
 
 /** No-login connect: the dashboard gives this browser its own device key. */
 export async function connect(server: string): Promise<Config> {

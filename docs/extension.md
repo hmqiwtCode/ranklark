@@ -17,6 +17,10 @@ pnpm ext:build              # → apps/extension/dist (fixed dev ID: iincpebojbf
 3. Open your dashboard (`pnpm dev` → http://localhost:3100). It connects automatically, with no login and
    nothing to copy. Or open the extension popup, enter the dashboard address and click **Connect**.
 
+**Track an app from the App Store.** Open any app page on apps.apple.com, click the Ranklark icon, optionally
+type keywords, and press **Track this app**. The app and keywords are added to your dashboard, and the first
+check starts right away.
+
 To stop the server calling Apple entirely (for hosted setups), start it with `ASO_FETCH_MODE=extension`.
 
 ## How it works

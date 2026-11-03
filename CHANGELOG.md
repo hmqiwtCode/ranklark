@@ -5,6 +5,13 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Extension popup: **Track this app** on any App Store app page (apps.apple.com/…/id…), with optional
+  keywords, in one click. No new Chrome permission is needed.
+
+### Fixed
+- The popup no longer says "All checked for today" when no keywords are tracked. "Run now" now reports what it did.
+
 ## [0.1.0] - 2026-11-03
 
 First public release.

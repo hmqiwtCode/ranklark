@@ -6,7 +6,7 @@
 import { TOKEN_RE } from "@ranklark/core/protocol";
 import type { Config, Message, Reply } from "../shared/types";
 import { run } from "./run";
-import { connect, fetchTasks } from "./server";
+import { connect, fetchTasks, pageApp, trackApp } from "./server";
 import { clearConfig, getConfig, loadStatus, saveStatus, setConfig, VERSION } from "./state";
 
 async function save(cfg: Config): Promise<Reply> {
@@ -84,6 +84,22 @@ export async function handle(msg: Message, sender: chrome.runtime.MessageSender,
       await clearConfig();
       await saveStatus({ state: "idle", lastError: undefined });
       return { ok: true };
+    case "pageApp":
+      if (!cfg) return { ok: false, error: "Not connected yet." };
+      try {
+        return { ok: true, app: await pageApp(cfg, msg.appId, msg.country) };
+      } catch (e) {
+        return errorReply(e);
+      }
+    case "track":
+      if (!cfg) return { ok: false, error: "Not connected yet." };
+      try {
+        const app = await trackApp(cfg, msg.appId, msg.country, msg.terms);
+        void run("just added"); // pick up the new app/keywords right away
+        return { ok: true, app };
+      } catch (e) {
+        return errorReply(e);
+      }
     default:
       return { ok: false, error: "unknown message" };
   }

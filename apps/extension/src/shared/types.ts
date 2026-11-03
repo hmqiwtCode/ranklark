@@ -20,7 +20,12 @@ export type Message =
   | { type: "pair"; server: string; token: string } // dashboard: hands over a key it minted
   | { type: "run" }
   | { type: "pause"; paused: boolean }
-  | { type: "unpair" };
+  | { type: "unpair" }
+  | { type: "pageApp"; appId: number; country: string } // popup: is the app in the current tab tracked?
+  | { type: "track"; appId: number; country: string; terms: string[] }; // popup: track it (+ keywords)
+
+/** The App Store app open in the current tab, as the dashboard knows it. */
+export type PageApp = { appId: number; country: string; tracked: boolean; name: string | null; keywords: string[]; added?: number };
 
 export type StatusReply = { ok: boolean; status: Status; paired: boolean; server: string | null; paused: boolean; version: string };
 export type Reply = { ok: boolean; error?: string; [k: string]: unknown };
