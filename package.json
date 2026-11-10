@@ -22,7 +22,7 @@
     "screenshots": "node scripts/screenshots.mjs"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.4",
+    "@biomejs/biome": "^2.6.6",
     "typescript": "^5.9.3",
     "puppeteer": "^25.16.0"
   },
